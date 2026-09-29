@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#FF69B4">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Kisses 💋</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon.png">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  }
+  
+  body {
+    background: linear-gradient(160deg, #ffe6f0 0%, #ffd1e3 40%, #ffb8d1 100%);
+    color: #2d2d2d;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* === SEND VIEW === */
+  #send-view {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    padding: 8px;
+    overflow-y: auto;
+  }
+  
+  .controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    max-width: 340px;
+  }
+
+  .header {
+    text-align: center;
+  }
+
+  .header h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #c2185b;
+    letter-spacing: -0.3px;
+  }
+
+  .card {
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 16px;
+    padding: 10px;
+    box-shadow: 0 2px 12px rgba(194, 24, 91, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+  }
+
+  .section-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #b088a0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+
+  .color-row {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 4px;
+  }
+  
+  .color-dot {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  
+  .color-dot.selected {
+    border-color: #2d2d2d;
+    transform: scale(1.2);
+  }
+
+  #custom-color {
+    width: 100%;
+    height: 32px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    background: white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    margin-top: 6px;
+  }
+
+  .photo-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .media-btn {
+    flex: 1;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1.5px dashed #f0a0c0;
+    background: white;
+    font-size: 12px;
+    font-weight: 500;
+    color: #c2185b;
+    cursor: pointer;
+    text-align: center;
+  }
+
+  .media-btn:active {
+    background: #fff5fa;
+  }
+
+  #preview-img {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: none;
+    object-fit: cover;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  }
+  
+  #preview-img.show { display: block; }
+  
+  .loc-toggle {
+    display: flex;
+    gap: 5px;
+  }
+  
+  .loc-toggle button {
+    flex: 1;
+    padding: 8px 4px;
+    border-radius: 8px;
+    border: 1.5px solid #f0d0e0;
+    background: white;
+    font-size: 11px;
+    font-weight: 600;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  
+  .loc-toggle button.active {
+    background: linear-gradient(135deg, #FF69B4, #e91e63);
+    color: white;
+    border-color: transparent;
+  }
+  
+  #custom-loc {
+    display: none;
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1.5px solid #f0d0e0;
+    font-size: 12px;
+    margin-top: 6px;
+    background: white;
+  }
+
+  #custom-loc:focus {
+    outline: none;
+    border-color: #FF69B4;
+  }
+  
+  #custom-loc.show { display: block; }
+  #file-input { display: none; }
+  
+  #send-btn {
+    padding: 14px;
+    border-radius: 14px;
+    border: none;
+    background: linear-gradient(135deg, #FF69B4 0%, #e91e63 100%);
+    color: white;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all 0.15s;
+    box-shadow: 0 6px 20px rgba(233, 30, 99, 0.35);
+  }
+  
+  #send-btn:active { 
+    transform: scale(0.97);
+  }
+
+  #send-btn:disabled {
+    opacity: 0.6;
+  }
+  
+  #notif-btn {
+    padding: 8px;
+    border-radius: 10px;
+    border: 1.5px solid #FF69B4;
+    background: transparent;
+    color: #FF69B4;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  
+  #notif-btn.on {
+    background: linear-gradient(135deg, #FF69B4, #e91e63);
+    color: white;
+    border-color: transparent;
+  }
+  
+  /* === RECEIVE VIEW === */
+  #receive-view {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    padding: 20px;
+    gap: 16px;
+    animation: fadeIn 0.3s;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  #kiss-display {
+    font-size: clamp(100px, 35vw, 180px);
+    line-height: 1;
+    filter: drop-shadow(0 8px 20px rgba(233, 30, 99, 0.25));
+  }
+  
+  #kiss-display.bounce { 
+    animation: kissPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  @keyframes kissPop {
+    0% { transform: scale(0.5); }
+    50% { transform: scale(1.4); }
+    100% { transform: scale(1); }
+  }
+  
+  #location-display {
+    color: #666;
+    font-size: 13px;
+    text-align: center;
+    max-width: 90vw;
+    padding: 8px 14px;
+    background: rgba(255,255,255,0.7);
+    border-radius: 12px;
+    line-height: 1.5;
+    word-break: break-word;
+  }
+  
+  #location-display a { 
+    color: #e91e63; 
+    text-decoration: none;
+    font-weight: 500;
+  }
+  
+  #location-display img {
+    max-width: min(80vw, 280px);
+    max-height: 35vh;
+    border-radius: 14px;
+    margin-top: 8px;
+    display: block;
+    object-fit: contain;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+  }
+  
+  #back-btn {
+    padding: 10px 24px;
+    border-radius: 12px;
+    border: none;
+    background: rgba(255,255,255,0.9);
+    color: #c2185b;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  
+  .hidden { display: none !important; }
+
+  /* === OnePlus Nord 4 — 360px wide === */
+  @media (max-width: 380px) {
+    .controls { max-width: 100%; gap: 8px; }
+    .card { padding: 8px; border-radius: 14px; }
+    .header h1 { font-size: 18px; }
+    .color-row { gap: 3px; }
+    .color-dot { border-width: 1.5px; }
+    .loc-toggle button { padding: 7px 3px; font-size: 10px; }
+    #custom-color { height: 28px; margin-top: 5px; }
+    .media-btn { padding: 8px; font-size: 11px; }
+    #send-btn { padding: 12px; font-size: 15px; }
+    #notif-btn { padding: 7px; font-size: 10px; }
+    #preview-img { width: 40px; height: 40px; }
+    .section-label { font-size: 9px; margin-bottom: 5px; }
+  }
+
+  /* === iPhone 17 — 402px wide === */
+  @media (min-width: 381px) and (max-width: 420px) {
+    .controls { max-width: 370px; gap: 10px; }
+  }
+
+  /* === Landscape (και τα δύο) === */
+  @media (max-height: 500px) {
+    #send-view { padding: 6px; }
+    .controls { gap: 6px; }
+    .header { display: none; }
+    .card { padding: 6px; }
+    .color-row { gap: 3px; }
+    .color-dot { max-width: 26px; }
+    .media-btn, .loc-toggle button, #notif-btn { padding: 6px; font-size: 10px; }
+    #send-btn { padding: 10px; font-size: 14px; }
+    #custom-color { height: 26px; }
+    #kiss-display { font-size: clamp(70px, 25vw, 120px); }
+  }
+</style>
+</head>
+<body>
+
+<!-- SEND VIEW -->
+<div id="send-view">
+  <div class="controls">
+    <div class="header">
+      <h1>Kisses 💋</h1>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Color</div>
+      <div class="color-row" id="color-row"></div>
+      <input type="color" id="custom-color" value="#FF69B4">
+    </div>
+
+    <div class="card">
+      <div class="section-label">Photo</div>
+      <div class="photo-row">
+        <button class="media-btn" onclick="document.getElementById('file-input').click()">📷 Add photo / GIF</button>
+        <img id="preview-img">
+      </div>
+      <input type="file" id="file-input" accept="image/*">
+    </div>
+
+    <div class="card">
+      <div class="section-label">Location</div>
+      <div class="loc-toggle" id="loc-toggle">
+        <button data-mode="off" class="active">Off</button>
+        <button data-mode="gps">GPS</button>
+        <button data-mode="text">Type</button>
+      </div>
+      <input type="text" id="custom-loc" placeholder="Type a location...">
+    </div>
+
+    <button id="notif-btn">🔔 Enable Notifications</button>
+    <button id="send-btn">SEND KISS</button>
+  </div>
+</div>
+
+<!-- RECEIVE VIEW -->
+<div id="receive-view" class="hidden">
+  <div id="kiss-display">💋</div>
+  <div id="location-display"></div>
+  <button id="back-btn">← Send another</button>
+</div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, limit }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getMessaging, getToken, onMessage }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBMsCKD2XexYnzfe1DXKF6mJMZ5P21k2Fw",
+  authDomain: "filaki.firebaseapp.com",
+  projectId: "filaki",
+  storageBucket: "filaki.firebasestorage.app",
+  messagingSenderId: "1067934466927",
+  appId: "1:1067934466927:web:a22eaae83ebc4e2d975e9a"
+};
+
+const IMGBB_KEY = '9e30919b8718be370e22427d93a9060e';
+const VAPID_KEY = 'BHTsXSIaPqWeyIyKZlVIZqp4MKyw5g-7rp6J5VsP4NwqThL_nlItmzNLL2PsKxSy6U3joLywXLrIC5_PEurKHwM';
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+let selectedColor = '#FF69B4';
+let locMode = 'off';
+let selectedFile = null;
+let lastSendTime = 0;
+
+const colors = [
+  '#FF69B4','#FF0000','#FF1493','#800080','#9400D3',
+  '#0000FF','#00BFFF','#00CED1','#00FF00','#008000',
+  '#FFD700','#FFA500','#FF8C00','#8B4513','#000000',
+  '#808080','#FFFFFF','#FFC0CB','#E6E6FA','#40E0D0'
+];
+
+// Build color dots
+const colorRow = document.getElementById('color-row');
+colors.forEach(c => {
+  const dot = document.createElement('div');
+  dot.className = 'color-dot' + (c === selectedColor ? ' selected' : '');
+  dot.style.background = c;
+  if (c === '#FFFFFF') dot.style.border = '2px solid #eee';
+  dot.onclick = () => {
+    selectedColor = c;
+    document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('selected'));
+    dot.classList.add('selected');
+  };
+  colorRow.appendChild(dot);
+});
+
+// Custom color picker
+document.getElementById('custom-color').addEventListener('input', e => {
+  selectedColor = e.target.value;
+  document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('selected'));
+});
+
+// Location toggle
+document.getElementById('loc-toggle').addEventListener('click', e => {
+  if (e.target.tagName !== 'BUTTON') return;
+  locMode = e.target.dataset.mode;
+  document.querySelectorAll('#loc-toggle button').forEach(b => b.classList.remove('active'));
+  e.target.classList.add('active');
+  document.getElementById('custom-loc').classList.toggle('show', locMode === 'text');
+});
+
+// File picker
+document.getElementById('file-input').addEventListener('change', e => {
+  selectedFile = e.target.files[0] || null;
+  const preview = document.getElementById('preview-img');
+  if (selectedFile) {
+    preview.src = URL.createObjectURL(selectedFile);
+    preview.classList.add('show');
+  } else {
+    preview.classList.remove('show');
+  }
+});
+
+// Upload to ImgBB
+async function uploadToImgBB(file) {
+  const formData = new FormData();
+  formData.append('image', file);
+  try {
+    const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, {
+      method: 'POST',
+      body: formData
+    });
+    const data = await res.json();
+    return data.data ? data.data.url : null;
+  } catch { return null; }
+}
+
+// Send kiss
+document.getElementById('send-btn').addEventListener('click', async () => {
+  const now = Date.now();
+  if (now - lastSendTime < 1000) return;
+  lastSendTime = now;
+
+  const sendBtn = document.getElementById('send-btn');
+  sendBtn.disabled = true;
+  sendBtn.textContent = 'Sending...';
+
+  let location = null;
+  if (locMode === 'gps') {
+    try {
+      const pos = await new Promise((res, rej) =>
+        navigator.geolocation.getCurrentPosition(res, rej, { timeout: 5000 })
+      );
+      location = { type: 'gps', lat: pos.coords.latitude, lon: pos.coords.longitude };
+    } catch { location = null; }
+  } else if (locMode === 'text') {
+    const text = document.getElementById('custom-loc').value.trim();
+    if (text) location = { type: 'text', label: text };
+  }
+
+  let mediaUrl = null;
+  if (selectedFile) {
+    mediaUrl = await uploadToImgBB(selectedFile);
+  }
+
+  await addDoc(collection(db, 'kisses'), {
+    color: selectedColor,
+    location,
+    mediaUrl,
+    time: now
+  });
+
+  selectedFile = null;
+  document.getElementById('file-input').value = '';
+  document.getElementById('preview-img').classList.remove('show');
+  document.getElementById('custom-loc').value = '';
+  sendBtn.disabled = false;
+  sendBtn.textContent = 'SEND KISS';
+
+  showReceive({ color: selectedColor, location, mediaUrl });
+});
+
+// Show receive view
+function showReceive(k) {
+  document.getElementById('send-view').classList.add('hidden');
+  document.getElementById('receive-view').classList.remove('hidden');
+
+  const kissEl = document.getElementById('kiss-display');
+  kissEl.textContent = '💋';
+  kissEl.style.color = k.color;
+  kissEl.classList.remove('bounce');
+  void kissEl.offsetWidth;
+  kissEl.classList.add('bounce');
+
+  let html = '';
+  if (k.location) {
+    if (k.location.type === 'gps') {
+      html += `<a href="https://maps.google.com/?q=${k.location.lat},${k.location.lon}" target="_blank">📍 ${k.location.lat.toFixed(3)}, ${k.location.lon.toFixed(3)}</a>`;
+    } else if (k.location.type === 'text') {
+      html += `📍 ${k.location.label}`;
+    }
+  }
+  if (k.mediaUrl) {
+    html += `<img src="${k.mediaUrl}">`;
+  }
+  document.getElementById('location-display').innerHTML = html || '💕';
+}
+
+// Back button
+document.getElementById('back-btn').addEventListener('click', () => {
+  document.getElementById('receive-view').classList.add('hidden');
+  document.getElementById('send-view').classList.remove('hidden');
+});
+
+// Receive kisses
+const q = query(collection(db, 'kisses'), orderBy('time', 'desc'), limit(1));
+let firstLoad = true;
+onSnapshot(q, snap => {
+  if (firstLoad) { firstLoad = false; return; }
+  snap.forEach(doc => {
+    const k = doc.data();
+    if (Date.now() - k.time < 10000) {
+      showReceive(k);
+    }
+  });
+});
+
+// Notifications
+document.getElementById('notif-btn').addEventListener('click', async () => {
+  const permission = await Notification.requestPermission();
+  if (permission !== 'granted') return;
+
+  if ('serviceWorker' in navigator) {
+    try {
+      const reg = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+      const messaging = getMessaging(app);
+      const token = await getToken(messaging, {
+        vapidKey: VAPID_KEY,
+        serviceWorkerRegistration: reg
+      });
+      if (token) {
+        await addDoc(collection(db, 'tokens'), { token, time: Date.now() });
+        document.getElementById('notif-btn').textContent = '🔔 Notifications On';
+        document.getElementById('notif-btn').classList.add('on');
+      }
+    } catch (err) {
+      console.log('Notify setup failed:', err);
+      document.getElementById('notif-btn').textContent = '🔔 Failed — check keys';
+    }
+  }
+});
+
+onMessage(getMessaging(app), payload => {
+  console.log('Foreground message:', payload);
+});
+</script>
+
+</body>
+</html>
