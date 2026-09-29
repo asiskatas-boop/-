@@ -2,347 +2,206 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="theme-color" content="#FF69B4">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>Filakia 💋</title>
 <link rel="manifest" href="/manifest.json">
 <link rel="apple-touch-icon" href="/icon.png">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  
-  html, body {
-    height: 100%;
-    overflow: hidden;
-    overscroll-behavior: none;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-  }
-  
+  html, body { height: 100%; overflow: hidden; overscroll-behavior: none; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; }
   body {
     background: linear-gradient(160deg, #ffe6f0 0%, #ffd1e3 40%, #ffb8d1 100%);
     color: #2d2d2d;
     padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: flex; align-items: center; justify-content: center;
   }
 
-  /* === SEND VIEW === */
-  #send-view {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    height: 100%;
-    padding: 8px;
-    overflow-y: auto;
-  }
-  
-  .controls {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    width: 100%;
-    max-width: 340px;
-  }
+  #send-view { display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; height: 100%; padding: 8px; overflow-y: auto; }
+  .controls { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 340px; }
 
-  .header {
-    text-align: center;
-  }
-
-  .header h1 {
-    font-size: 22px;
-    font-weight: 700;
-    color: #c2185b;
-    letter-spacing: -0.3px;
-  }
+  .header { text-align: center; }
+  .header h1 { font-size: 20px; font-weight: 700; color: #c2185b; }
 
   .card {
-    background: rgba(255, 255, 255, 0.75);
+    background: rgba(255,255,255,0.78);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border-radius: 16px;
-    padding: 10px;
-    box-shadow: 0 2px 12px rgba(194, 24, 91, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.9);
+    border-radius: 14px;
+    padding: 8px;
+    box-shadow: 0 2px 12px rgba(194,24,91,0.08);
+    border: 1px solid rgba(255,255,255,0.9);
   }
 
-  .section-label {
-    font-size: 10px;
-    font-weight: 700;
-    color: #b088a0;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 6px;
-  }
+  .section-label { font-size: 9px; font-weight: 700; color: #b088a0; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
 
-  .color-row {
-    display: grid;
-    grid-template-columns: repeat(10, 1fr);
-    gap: 4px;
-  }
-  
-  .color-dot {
-    width: 100%;
-    aspect-ratio: 1;
-    border-radius: 50%;
-    border: 2px solid transparent;
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-  
-  .color-dot.selected {
-    border-color: #2d2d2d;
-    transform: scale(1.2);
-  }
-
-  #custom-color {
-    width: 100%;
-    height: 32px;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    background: white;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-    margin-top: 6px;
-  }
-
-  .photo-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  
-  .media-btn {
+  /* Tabs */
+  .tabs { display: flex; gap: 5px; }
+  .tabs button {
     flex: 1;
-    padding: 10px;
+    padding: 9px 4px;
     border-radius: 10px;
-    border: 1.5px dashed #f0a0c0;
-    background: white;
-    font-size: 12px;
-    font-weight: 500;
-    color: #c2185b;
-    cursor: pointer;
-    text-align: center;
-  }
-
-  .media-btn:active {
-    background: #fff5fa;
-  }
-
-  #preview-img {
-    width: 44px;
-    height: 44px;
-    border-radius: 10px;
-    display: none;
-    object-fit: cover;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-  }
-  
-  #preview-img.show { display: block; }
-  
-  .loc-toggle {
-    display: flex;
-    gap: 5px;
-  }
-  
-  .loc-toggle button {
-    flex: 1;
-    padding: 8px 4px;
-    border-radius: 8px;
     border: 1.5px solid #f0d0e0;
     background: white;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
-    color: #666;
+    color: #888;
     cursor: pointer;
     transition: all 0.15s;
   }
-  
+  .tabs button.active {
+    background: linear-gradient(135deg, #FF69B4, #e91e63);
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 3px 10px rgba(233,30,99,0.25);
+  }
+
+  /* Preview */
+  #preview-area {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 70px;
+    padding: 4px;
+  }
+
+  #preview-icon { width: 70px; height: 70px; filter: drop-shadow(0 4px 10px rgba(233,30,99,0.2)); }
+
+  #preview-hug { font-size: 56px; line-height: 1; filter: drop-shadow(0 4px 10px rgba(233,30,99,0.2)); }
+
+  #draw-canvas {
+    width: 100%;
+    max-width: 300px;
+    height: 140px;
+    border-radius: 12px;
+    background: white;
+    touch-action: none;
+    cursor: crosshair;
+    box-shadow: inset 0 0 0 1.5px #f0d0e0;
+    display: none;
+  }
+
+  /* Colors */
+  .color-row { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; }
+  .color-dot {
+    width: 100%; aspect-ratio: 1; border-radius: 50%;
+    border: 2px solid transparent; cursor: pointer; transition: all 0.15s;
+  }
+  .color-dot.selected { border-color: #2d2d2d; transform: scale(1.2); }
+
+  #custom-color { width: 100%; height: 30px; border: none; border-radius: 8px; cursor: pointer; background: white; margin-top: 5px; }
+
+  /* Photo row */
+  .photo-row { display: flex; align-items: center; gap: 8px; }
+  .media-btn {
+    flex: 1; padding: 9px; border-radius: 10px;
+    border: 1.5px dashed #f0a0c0; background: white;
+    font-size: 12px; font-weight: 500; color: #c2185b;
+    cursor: pointer; text-align: center;
+  }
+  #preview-img { width: 42px; height: 42px; border-radius: 10px; display: none; object-fit: cover; }
+  #preview-img.show { display: block; }
+  #file-input { display: none; }
+
+  /* Location */
+  .loc-toggle { display: flex; gap: 5px; }
+  .loc-toggle button {
+    flex: 1; padding: 7px 4px; border-radius: 8px;
+    border: 1.5px solid #f0d0e0; background: white;
+    font-size: 11px; font-weight: 600; color: #666;
+    cursor: pointer; transition: all 0.15s;
+  }
   .loc-toggle button.active {
     background: linear-gradient(135deg, #FF69B4, #e91e63);
-    color: white;
-    border-color: transparent;
+    color: white; border-color: transparent;
   }
-  
   #custom-loc {
-    display: none;
-    width: 100%;
-    padding: 8px 10px;
-    border-radius: 8px;
-    border: 1.5px solid #f0d0e0;
-    font-size: 12px;
-    margin-top: 6px;
-    background: white;
+    display: none; width: 100%; padding: 7px 10px;
+    border-radius: 8px; border: 1.5px solid #f0d0e0;
+    font-size: 12px; margin-top: 5px; background: white;
   }
-
-  #custom-loc:focus {
-    outline: none;
-    border-color: #FF69B4;
-  }
-  
   #custom-loc.show { display: block; }
-  #file-input { display: none; }
-  
+  #custom-loc:focus { outline: none; border-color: #FF69B4; }
+
   #send-btn {
-    padding: 14px;
-    border-radius: 14px;
-    border: none;
+    padding: 14px; border-radius: 14px; border: none;
     background: linear-gradient(135deg, #FF69B4 0%, #e91e63 100%);
-    color: white;
-    font-size: 16px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    cursor: pointer;
+    color: white; font-size: 16px; font-weight: 700;
+    letter-spacing: 0.5px; cursor: pointer;
+    box-shadow: 0 6px 20px rgba(233,30,99,0.35);
     transition: all 0.15s;
-    box-shadow: 0 6px 20px rgba(233, 30, 99, 0.35);
   }
-  
-  #send-btn:active { 
-    transform: scale(0.97);
-  }
+  #send-btn:active { transform: scale(0.97); }
+  #send-btn:disabled { opacity: 0.6; }
 
-  #send-btn:disabled {
-    opacity: 0.6;
-  }
-  
   #notif-btn {
-    padding: 8px;
-    border-radius: 10px;
-    border: 1.5px solid #FF69B4;
-    background: transparent;
-    color: #FF69B4;
-    font-size: 11px;
-    font-weight: 500;
+    padding: 7px; border-radius: 10px;
+    border: 1.5px solid #FF69B4; background: transparent;
+    color: #FF69B4; font-size: 10px; font-weight: 500;
     cursor: pointer;
   }
-  
-  #notif-btn.on {
-    background: linear-gradient(135deg, #FF69B4, #e91e63);
-    color: white;
-    border-color: transparent;
-  }
-  
-  /* === RECEIVE VIEW === */
+  #notif-btn.on { background: linear-gradient(135deg, #FF69B4, #e91e63); color: white; border-color: transparent; }
+
+  /* Receive */
   #receive-view {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-    padding: 20px;
-    gap: 16px;
-    animation: fadeIn 0.3s;
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; width: 100%; height: 100%;
+    padding: 20px; gap: 16px; animation: fadeIn 0.3s;
   }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-  
-  #kiss-display {
-    font-size: clamp(100px, 35vw, 180px);
-    line-height: 1;
-    filter: drop-shadow(0 8px 20px rgba(233, 30, 99, 0.25));
-  }
-  
-  #kiss-display.bounce { 
-    animation: kissPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
+  #kiss-display { width: 140px; height: 140px; filter: drop-shadow(0 8px 20px rgba(233,30,99,0.25)); }
+  #kiss-display.bounce { animation: kissPop 0.5s cubic-bezier(0.34,1.56,0.64,1); }
+  @keyframes kissPop { 0% { transform: scale(0.5); } 50% { transform: scale(1.4); } 100% { transform: scale(1); } }
 
-  @keyframes kissPop {
-    0% { transform: scale(0.5); }
-    50% { transform: scale(1.4); }
-    100% { transform: scale(1); }
-  }
-  
+  #hug-display { font-size: 130px; line-height: 1; display: none; }
+  #hug-display.bounce { animation: kissPop 0.5s cubic-bezier(0.34,1.56,0.64,1); }
+
   #location-display {
-    color: #666;
-    font-size: 13px;
-    text-align: center;
-    max-width: 90vw;
-    padding: 8px 14px;
-    background: rgba(255,255,255,0.7);
-    border-radius: 12px;
-    line-height: 1.5;
-    word-break: break-word;
+    color: #666; font-size: 13px; text-align: center;
+    max-width: 90vw; padding: 8px 14px;
+    background: rgba(255,255,255,0.7); border-radius: 12px;
+    line-height: 1.5; word-break: break-word;
   }
-  
-  #location-display a { 
-    color: #e91e63; 
-    text-decoration: none;
-    font-weight: 500;
-  }
-  
-  #location-display img {
-    max-width: min(80vw, 280px);
-    max-height: 35vh;
-    border-radius: 14px;
-    margin-top: 8px;
-    display: block;
-    object-fit: contain;
-    box-shadow: 0 6px 20px rgba(0,0,0,0.12);
-  }
-  
-  #back-btn {
-    padding: 10px 24px;
-    border-radius: 12px;
-    border: none;
-    background: rgba(255,255,255,0.9);
-    color: #c2185b;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-  }
-  
+  #location-display a { color: #e91e63; text-decoration: none; font-weight: 500; }
+  #location-display img { max-width: min(80vw, 280px); max-height: 40vh; border-radius: 14px; margin-top: 8px; display: block; object-fit: contain; box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
+
+  #back-btn { padding: 10px 24px; border-radius: 12px; border: none; background: rgba(255,255,255,0.9); color: #c2185b; font-size: 13px; font-weight: 600; cursor: pointer; }
+
   .hidden { display: none !important; }
 
-  /* === OnePlus Nord 4 — 360px wide === */
   @media (max-width: 380px) {
-    .controls { max-width: 100%; gap: 8px; }
-    .card { padding: 8px; border-radius: 14px; }
-    .header h1 { font-size: 18px; }
-    .color-row { gap: 3px; }
-    .color-dot { border-width: 1.5px; }
-    .loc-toggle button { padding: 7px 3px; font-size: 10px; }
-    #custom-color { height: 28px; margin-top: 5px; }
+    .controls { gap: 7px; }
+    .card { padding: 7px; border-radius: 12px; }
+    .header h1 { font-size: 17px; }
+    .tabs button { padding: 8px 3px; font-size: 11px; }
+    #preview-icon { width: 60px; height: 60px; }
+    #preview-hug { font-size: 48px; }
+    #draw-canvas { height: 120px; }
+    .loc-toggle button { padding: 6px 3px; font-size: 10px; }
     .media-btn { padding: 8px; font-size: 11px; }
     #send-btn { padding: 12px; font-size: 15px; }
-    #notif-btn { padding: 7px; font-size: 10px; }
-    #preview-img { width: 40px; height: 40px; }
-    .section-label { font-size: 9px; margin-bottom: 5px; }
-  }
-
-  /* === iPhone 17 — 402px wide === */
-  @media (min-width: 381px) and (max-width: 420px) {
-    .controls { max-width: 370px; gap: 10px; }
-  }
-
-  /* === Landscape (και τα δύο) === */
-  @media (max-height: 500px) {
-    #send-view { padding: 6px; }
-    .controls { gap: 6px; }
-    .header { display: none; }
-    .card { padding: 6px; }
-    .color-row { gap: 3px; }
-    .color-dot { max-width: 26px; }
-    .media-btn, .loc-toggle button, #notif-btn { padding: 6px; font-size: 10px; }
-    #send-btn { padding: 10px; font-size: 14px; }
-    #custom-color { height: 26px; }
-    #kiss-display { font-size: clamp(70px, 25vw, 120px); }
   }
 </style>
 </head>
 <body>
 
-<!-- SEND VIEW -->
 <div id="send-view">
   <div class="controls">
-    <div class="header">
-      <h1>Kisses 💋</h1>
+    <div class="header"><h1>Send Love 💕</h1></div>
+
+    <div class="card">
+      <div class="tabs" id="tabs">
+        <button data-type="kiss" class="active">💋 Kiss</button>
+        <button data-type="hug">🤗 Hug</button>
+        <button data-type="draw">✏️ Draw</button>
+      </div>
+      <div id="preview-area">
+        <svg id="preview-icon" viewBox="0 0 24 24" fill="#FF69B4"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+        <div id="preview-hug" style="display:none">🤗</div>
+        <canvas id="draw-canvas"></canvas>
+      </div>
     </div>
 
     <div class="card">
@@ -371,13 +230,13 @@
     </div>
 
     <button id="notif-btn">🔔 Enable Notifications</button>
-    <button id="send-btn">SEND KISS</button>
+    <button id="send-btn">SEND 💕</button>
   </div>
 </div>
 
-<!-- RECEIVE VIEW -->
 <div id="receive-view" class="hidden">
-  <div id="kiss-display">💋</div>
+  <svg id="kiss-display" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+  <div id="hug-display">🤗</div>
   <div id="location-display"></div>
   <button id="back-btn">← Send another</button>
 </div>
@@ -398,12 +257,13 @@ const firebaseConfig = {
   appId: "1:1067934466927:web:a22eaae83ebc4e2d975e9a"
 };
 
-const IMGBB_KEY = '9e30919b8718be370e22427d93a9060e';
-const VAPID_KEY = 'BHTsXSIaPqWeyIyKZlVIZqp4MKyw5g-7rp6J5VsP4NwqThL_nlItmzNLL2PsKxSy6U3joLywXLrIC5_PEurKHwM';
+const IMGBB_KEY = 'ΒΑΛΕ_ΕΔΩ_ΤΟ_IMGBB_KEY';
+const VAPID_KEY = 'ΒΑΛΕ_ΕΔΩ_ΤΟ_VAPID_KEY';
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+let selectedType = 'kiss';
 let selectedColor = '#FF69B4';
 let locMode = 'off';
 let selectedFile = null;
@@ -416,7 +276,7 @@ const colors = [
   '#808080','#FFFFFF','#FFC0CB','#E6E6FA','#40E0D0'
 ];
 
-// Build color dots
+// === Color dots ===
 const colorRow = document.getElementById('color-row');
 colors.forEach(c => {
   const dot = document.createElement('div');
@@ -427,17 +287,96 @@ colors.forEach(c => {
     selectedColor = c;
     document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('selected'));
     dot.classList.add('selected');
+    applyColor();
   };
   colorRow.appendChild(dot);
 });
 
-// Custom color picker
+function applyColor() {
+  document.getElementById('preview-icon').setAttribute('fill', selectedColor);
+  ctx.strokeStyle = selectedColor;
+}
+
 document.getElementById('custom-color').addEventListener('input', e => {
   selectedColor = e.target.value;
   document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('selected'));
+  applyColor();
 });
 
-// Location toggle
+// === Tabs ===
+document.getElementById('tabs').addEventListener('click', e => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  selectedType = btn.dataset.type;
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  updatePreview();
+});
+
+function updatePreview() {
+  const svg = document.getElementById('preview-icon');
+  const hug = document.getElementById('preview-hug');
+  const canvas = document.getElementById('draw-canvas');
+
+  if (selectedType === 'kiss') {
+    svg.style.display = 'block';
+    hug.style.display = 'none';
+    canvas.style.display = 'none';
+  } else if (selectedType === 'hug') {
+    svg.style.display = 'none';
+    hug.style.display = 'block';
+    canvas.style.display = 'none';
+  } else {
+    svg.style.display = 'none';
+    hug.style.display = 'none';
+    canvas.style.display = 'block';
+  }
+}
+
+// === Drawing canvas ===
+const canvas = document.getElementById('draw-canvas');
+canvas.width = 600;
+canvas.height = 300;
+const ctx = canvas.getContext('2d');
+ctx.lineWidth = 6;
+ctx.lineCap = 'round';
+ctx.lineJoin = 'round';
+ctx.strokeStyle = selectedColor;
+
+let drawing = false;
+function getPos(e) {
+  const r = canvas.getBoundingClientRect();
+  return {
+    x: (e.clientX - r.left) * (canvas.width / r.width),
+    y: (e.clientY - r.top) * (canvas.height / r.height)
+  };
+}
+canvas.addEventListener('pointerdown', e => {
+  drawing = true;
+  const p = getPos(e);
+  ctx.beginPath();
+  ctx.moveTo(p.x, p.y);
+  canvas.setPointerCapture(e.pointerId);
+});
+canvas.addEventListener('pointermove', e => {
+  if (!drawing) return;
+  const p = getPos(e);
+  ctx.lineTo(p.x, p.y);
+  ctx.stroke();
+});
+canvas.addEventListener('pointerup', () => drawing = false);
+canvas.addEventListener('pointercancel', () => drawing = false);
+
+function clearCanvas() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+function isCanvasEmpty() {
+  const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+  for (let i = 3; i < data.length; i += 4) if (data[i] !== 0) return false;
+  return true;
+}
+
+// === Location ===
 document.getElementById('loc-toggle').addEventListener('click', e => {
   if (e.target.tagName !== 'BUTTON') return;
   locMode = e.target.dataset.mode;
@@ -446,33 +385,25 @@ document.getElementById('loc-toggle').addEventListener('click', e => {
   document.getElementById('custom-loc').classList.toggle('show', locMode === 'text');
 });
 
-// File picker
+// === Photo ===
 document.getElementById('file-input').addEventListener('change', e => {
   selectedFile = e.target.files[0] || null;
   const preview = document.getElementById('preview-img');
   if (selectedFile) {
     preview.src = URL.createObjectURL(selectedFile);
     preview.classList.add('show');
-  } else {
-    preview.classList.remove('show');
-  }
+  } else preview.classList.remove('show');
 });
 
-// Upload to ImgBB
-async function uploadToImgBB(file) {
-  const formData = new FormData();
-  formData.append('image', file);
+async function uploadToImgBB(formData) {
   try {
-    const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, {
-      method: 'POST',
-      body: formData
-    });
+    const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, { method: 'POST', body: formData });
     const data = await res.json();
     return data.data ? data.data.url : null;
   } catch { return null; }
 }
 
-// Send kiss
+// === Send ===
 document.getElementById('send-btn').addEventListener('click', async () => {
   const now = Date.now();
   if (now - lastSendTime < 1000) return;
@@ -485,22 +416,28 @@ document.getElementById('send-btn').addEventListener('click', async () => {
   let location = null;
   if (locMode === 'gps') {
     try {
-      const pos = await new Promise((res, rej) =>
-        navigator.geolocation.getCurrentPosition(res, rej, { timeout: 5000 })
-      );
+      const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { timeout: 5000 }));
       location = { type: 'gps', lat: pos.coords.latitude, lon: pos.coords.longitude };
-    } catch { location = null; }
+    } catch {}
   } else if (locMode === 'text') {
     const text = document.getElementById('custom-loc').value.trim();
     if (text) location = { type: 'text', label: text };
   }
 
   let mediaUrl = null;
-  if (selectedFile) {
-    mediaUrl = await uploadToImgBB(selectedFile);
+  if (selectedType === 'draw' && !isCanvasEmpty()) {
+    const base64 = canvas.toDataURL('image/png').split(',')[1];
+    const fd = new FormData();
+    fd.append('image', base64);
+    mediaUrl = await uploadToImgBB(fd);
+  } else if (selectedFile) {
+    const fd = new FormData();
+    fd.append('image', selectedFile);
+    mediaUrl = await uploadToImgBB(fd);
   }
 
   await addDoc(collection(db, 'kisses'), {
+    type: selectedType,
     color: selectedColor,
     location,
     mediaUrl,
@@ -511,23 +448,39 @@ document.getElementById('send-btn').addEventListener('click', async () => {
   document.getElementById('file-input').value = '';
   document.getElementById('preview-img').classList.remove('show');
   document.getElementById('custom-loc').value = '';
+  clearCanvas();
   sendBtn.disabled = false;
-  sendBtn.textContent = 'SEND KISS';
+  sendBtn.textContent = 'SEND 💕';
 
-  showReceive({ color: selectedColor, location, mediaUrl });
+  showReceive({ type: selectedType, color: selectedColor, location, mediaUrl });
 });
 
-// Show receive view
+// === Receive ===
 function showReceive(k) {
   document.getElementById('send-view').classList.add('hidden');
   document.getElementById('receive-view').classList.remove('hidden');
 
-  const kissEl = document.getElementById('kiss-display');
-  kissEl.textContent = '💋';
-  kissEl.style.color = k.color;
-  kissEl.classList.remove('bounce');
-  void kissEl.offsetWidth;
-  kissEl.classList.add('bounce');
+  const svg = document.getElementById('kiss-display');
+  const hug = document.getElementById('hug-display');
+
+  svg.classList.remove('bounce');
+  hug.classList.remove('bounce');
+
+  if (k.mediaUrl) {
+    svg.style.display = 'none';
+    hug.style.display = 'none';
+  } else if (k.type === 'hug') {
+    svg.style.display = 'none';
+    hug.style.display = 'block';
+    void hug.offsetWidth;
+    hug.classList.add('bounce');
+  } else {
+    svg.style.display = 'block';
+    hug.style.display = 'none';
+    svg.querySelector('path').setAttribute('fill', k.color || '#FF69B4');
+    void svg.offsetWidth;
+    svg.classList.add('bounce');
+  }
 
   let html = '';
   if (k.location) {
@@ -537,59 +490,46 @@ function showReceive(k) {
       html += `📍 ${k.location.label}`;
     }
   }
-  if (k.mediaUrl) {
-    html += `<img src="${k.mediaUrl}">`;
-  }
-  document.getElementById('location-display').innerHTML = html || '💕';
+  if (k.mediaUrl) html += `<img src="${k.mediaUrl}">`;
+  document.getElementById('location-display').innerHTML = html || (k.type === 'hug' ? '🤗 A hug for you' : '💕');
 }
 
-// Back button
 document.getElementById('back-btn').addEventListener('click', () => {
   document.getElementById('receive-view').classList.add('hidden');
   document.getElementById('send-view').classList.remove('hidden');
 });
 
-// Receive kisses
 const q = query(collection(db, 'kisses'), orderBy('time', 'desc'), limit(1));
 let firstLoad = true;
 onSnapshot(q, snap => {
   if (firstLoad) { firstLoad = false; return; }
   snap.forEach(doc => {
     const k = doc.data();
-    if (Date.now() - k.time < 10000) {
-      showReceive(k);
-    }
+    if (Date.now() - k.time < 10000) showReceive(k);
   });
 });
 
-// Notifications
+// === Notifications ===
 document.getElementById('notif-btn').addEventListener('click', async () => {
   const permission = await Notification.requestPermission();
   if (permission !== 'granted') return;
-
   if ('serviceWorker' in navigator) {
     try {
       const reg = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
       const messaging = getMessaging(app);
-      const token = await getToken(messaging, {
-        vapidKey: VAPID_KEY,
-        serviceWorkerRegistration: reg
-      });
+      const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: reg });
       if (token) {
         await addDoc(collection(db, 'tokens'), { token, time: Date.now() });
         document.getElementById('notif-btn').textContent = '🔔 Notifications On';
         document.getElementById('notif-btn').classList.add('on');
       }
     } catch (err) {
-      console.log('Notify setup failed:', err);
-      document.getElementById('notif-btn').textContent = '🔔 Failed — check keys';
+      console.log('Notify failed:', err);
+      document.getElementById('notif-btn').textContent = '🔔 Failed';
     }
   }
 });
-
-onMessage(getMessaging(app), payload => {
-  console.log('Foreground message:', payload);
-});
+onMessage(getMessaging(app), p => console.log('Foreground:', p));
 </script>
 
 </body>
