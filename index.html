@@ -8,6 +8,21 @@
 <title>Kisses 💋</title>
 <link rel="manifest" href="/manifest.json">
 <link rel="apple-touch-icon" href="/icon.png">
+
+<!-- OneSignal -->
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function(OneSignal) {
+    await OneSignal.init({
+      appId: "6752ffdc-ebef-4aec-b9c7-ccb73f791cfd",
+      safari_web_id: "web.onesignal.auto.2b30b273-8f48-4327-8bae-bed77c33071b",
+      notifyButton: { enable: false },
+      allowLocalhostAsSecureOrigin: true
+    });
+  });
+</script>
+
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { height: 100%; overflow: hidden; overscroll-behavior: none; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; }
@@ -229,8 +244,6 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getFirestore, collection, doc, setDoc, onSnapshot, query, orderBy, limit }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-import { getMessaging, getToken, onMessage }
-  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js';
 
 const firebaseConfig = {
   apiKey: "AIzaSyBMsCKD2XexYnzfe1DXKF6mJMZ5P21k2Fw",
@@ -242,8 +255,9 @@ const firebaseConfig = {
 };
 
 const IMGBB_KEY = '9e30919b8718be370e22427d93a9060e';
-const VAPID_KEY = 'BHTsXSIaPqWeyIyKZlVIZqp4MKyw5g-7rp6J5VsP4NwqThL_nlItmzNLL2PsKxSy6U3joLywXLrIC5_PEurKHwM';
 const GIPHY_KEY = 'vMggDD6nkMVZAOyf4okMRDnuj3z8Vet9';
+const ONESIGNAL_APP_ID = '6752ffdc-ebef-4aec-b9c7-ccb73f791cfd';
+const ONESIGNAL_REST_KEY = '6752ffdc-ebef-4aec-b9c7-ccb73f791cfd';
 const MAX_FILE_MB = 15;
 
 const app = initializeApp(firebaseConfig);
@@ -256,7 +270,6 @@ let selectedFile = null;
 let lastSendTime = 0;
 let lastShownDocId = null;
 let notifInitialized = false;
-let notifPending = false;
 
 const colors = [
   '#FF69B4','#FF0000','#FF1493','#800080','#9400D3',
@@ -281,7 +294,7 @@ ctx.lineCap = 'round';
 ctx.lineJoin = 'round';
 ctx.strokeStyle = selectedColor;
 
-// === Color dots ===
+// === Colors ===
 const colorRow = document.getElementById('color-row');
 colors.forEach(c => {
   const dot = document.createElement('div');
@@ -447,6 +460,34 @@ async function fetchRandomMinionGif() {
   } catch { return null; }
 }
 
+async function sendOneSignalNotification(type) {
+  let body = 'A kiss for you 💋';
+  if (type === 'hug') body = 'A hug for you 🤗';
+  else if (type === 'papoi') body = 'Papoi! 🍌';
+  else if (type === 'draw') body = 'A drawing! ✏️';
+
+  try {
+    const res = await fetch('https://onesignal.com/api/v1/notifications', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Basic ${ONESIGNAL_REST_KEY}`
+      },
+      body: JSON.stringify({
+        app_id: ONESIGNAL_APP_ID,
+        included_segments: ['Subscribed Users'],
+        headings: { en: 'Kisses 💋' },
+        contents: { en: body },
+        chrome_web_icon: 'https://whimsical-stardust-19fb53.netlify.app/icon.png'
+      })
+    });
+    const result = await res.json();
+    console.log('OneSignal result:', result);
+  } catch (err) {
+    console.log('OneSignal failed:', err);
+  }
+}
+
 // === Send ===
 document.getElementById('send-btn').addEventListener('click', async () => {
   const now = Date.now();
@@ -471,7 +512,6 @@ document.getElementById('send-btn').addEventListener('click', async () => {
       if (text) location = { type: 'text', label: text };
     }
 
-    // Priority: photo > papoi gif > draw > nothing
     let mediaUrl = null;
     if (selectedFile) {
       const fd = new FormData();
@@ -497,6 +537,9 @@ document.getElementById('send-btn').addEventListener('click', async () => {
     const docRef = doc(collection(db, 'kisses'));
     lastShownDocId = docRef.id;
     await setDoc(docRef, kissData);
+
+    // Send notification (don't wait for it)
+    sendOneSignalNotification(selectedType);
 
     selectedFile = null;
     document.getElementById('file-input').value = '';
@@ -534,7 +577,6 @@ function showReceive(k) {
     void emoji.offsetWidth;
     emoji.classList.add('bounce');
   } else {
-    // kiss (default)
     svg.style.display = 'block';
     emoji.style.display = 'none';
     document.getElementById('kiss-path').setAttribute('fill', k.color || '#FF69B4');
@@ -561,7 +603,7 @@ document.getElementById('back-btn').addEventListener('click', () => {
   document.getElementById('send-view').classList.remove('hidden');
 });
 
-// === Firestore listener (self-healing) ===
+// === Firestore listener ===
 let firstLoad = true;
 let unsubscribeSnapshot = null;
 
@@ -584,46 +626,27 @@ function startListener() {
 }
 startListener();
 
-// === Notifications ===
+// === OneSignal permission button ===
 document.getElementById('notif-btn').addEventListener('click', async () => {
-  if (notifInitialized || notifPending) return;
-  notifPending = true;
+  if (notifInitialized) return;
   const btn = document.getElementById('notif-btn');
   btn.textContent = '🔔 Working...';
 
   try {
-    const permission = await Notification.requestPermission();
-    if (permission !== 'granted') {
-      btn.textContent = '🔔 Tap to retry';
-      return;
-    }
-
-    if (!('serviceWorker' in navigator)) {
-      btn.textContent = '🔔 Not supported';
-      return;
-    }
-
-    const reg = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-    const messaging = getMessaging(app);
-    const token = await getToken(messaging, {
-      vapidKey: VAPID_KEY,
-      serviceWorkerRegistration: reg
+    await window.OneSignalDeferred.push(async function(OneSignal) {
+      await OneSignal.Notifications.requestPermission();
+      const granted = OneSignal.Notifications.permission;
+      if (granted) {
+        btn.textContent = '🔔 Notifications On';
+        btn.classList.add('on');
+        notifInitialized = true;
+      } else {
+        btn.textContent = '🔔 Tap to retry';
+      }
     });
-
-    if (token) {
-      await setDoc(doc(collection(db, 'tokens')), { token, time: Date.now() });
-      btn.textContent = '🔔 Notifications On';
-      btn.classList.add('on');
-      notifInitialized = true;
-      onMessage(messaging, p => console.log('Foreground:', p));
-    } else {
-      btn.textContent = '🔔 Tap to retry';
-    }
   } catch (err) {
     console.error('Notify failed:', err);
     btn.textContent = '🔔 Tap to retry';
-  } finally {
-    notifPending = false;
   }
 });
 </script>
