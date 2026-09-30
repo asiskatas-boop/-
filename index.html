@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="theme-color" content="#FF69B4">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>Filakia 💋</title>
+<title>Kisses 💋</title>
 <link rel="manifest" href="/manifest.json">
 <link rel="apple-touch-icon" href="/icon.png">
 <style>
@@ -36,63 +36,36 @@
 
   .section-label { font-size: 9px; font-weight: 700; color: #b088a0; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
 
-  /* Tabs */
   .tabs { display: flex; gap: 5px; }
   .tabs button {
-    flex: 1;
-    padding: 9px 4px;
-    border-radius: 10px;
-    border: 1.5px solid #f0d0e0;
-    background: white;
-    font-size: 12px;
-    font-weight: 600;
-    color: #888;
-    cursor: pointer;
-    transition: all 0.15s;
+    flex: 1; padding: 9px 4px; border-radius: 10px;
+    border: 1.5px solid #f0d0e0; background: white;
+    font-size: 12px; font-weight: 600; color: #888;
+    cursor: pointer; transition: all 0.15s;
   }
   .tabs button.active {
     background: linear-gradient(135deg, #FF69B4, #e91e63);
-    color: white;
-    border-color: transparent;
+    color: white; border-color: transparent;
     box-shadow: 0 3px 10px rgba(233,30,99,0.25);
   }
 
-  /* Preview */
   #preview-area {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 70px;
-    padding: 4px;
+    display: flex; justify-content: center; align-items: center;
+    min-height: 70px; padding: 4px; margin-top: 6px;
   }
-
   #preview-icon { width: 70px; height: 70px; filter: drop-shadow(0 4px 10px rgba(233,30,99,0.2)); }
+  #preview-emoji { font-size: 56px; line-height: 1; filter: drop-shadow(0 4px 10px rgba(233,30,99,0.2)); }
 
-  #preview-hug { font-size: 56px; line-height: 1; filter: drop-shadow(0 4px 10px rgba(233,30,99,0.2)); }
-
-  #draw-canvas {
-    width: 100%;
-    max-width: 300px;
-    height: 140px;
-    border-radius: 12px;
-    background: white;
-    touch-action: none;
-    cursor: crosshair;
-    box-shadow: inset 0 0 0 1.5px #f0d0e0;
-    display: none;
-  }
-
-  /* Colors */
   .color-row { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; }
   .color-dot {
     width: 100%; aspect-ratio: 1; border-radius: 50%;
     border: 2px solid transparent; cursor: pointer; transition: all 0.15s;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06);
   }
-  .color-dot.selected { border-color: #2d2d2d; transform: scale(1.2); }
+  .color-dot.selected { border-color: #2d2d2d; transform: scale(1.2); box-shadow: none; }
 
   #custom-color { width: 100%; height: 30px; border: none; border-radius: 8px; cursor: pointer; background: white; margin-top: 5px; }
 
-  /* Photo row */
   .photo-row { display: flex; align-items: center; gap: 8px; }
   .media-btn {
     flex: 1; padding: 9px; border-radius: 10px;
@@ -104,7 +77,6 @@
   #preview-img.show { display: block; }
   #file-input { display: none; }
 
-  /* Location */
   .loc-toggle { display: flex; gap: 5px; }
   .loc-toggle button {
     flex: 1; padding: 7px 4px; border-radius: 8px;
@@ -143,7 +115,6 @@
   }
   #notif-btn.on { background: linear-gradient(135deg, #FF69B4, #e91e63); color: white; border-color: transparent; }
 
-  /* Receive */
   #receive-view {
     display: flex; flex-direction: column; align-items: center;
     justify-content: center; width: 100%; height: 100%;
@@ -155,8 +126,8 @@
   #kiss-display.bounce { animation: kissPop 0.5s cubic-bezier(0.34,1.56,0.64,1); }
   @keyframes kissPop { 0% { transform: scale(0.5); } 50% { transform: scale(1.4); } 100% { transform: scale(1); } }
 
-  #hug-display { font-size: 130px; line-height: 1; display: none; }
-  #hug-display.bounce { animation: kissPop 0.5s cubic-bezier(0.34,1.56,0.64,1); }
+  #emoji-display { font-size: 130px; line-height: 1; display: none; }
+  #emoji-display.bounce { animation: kissPop 0.5s cubic-bezier(0.34,1.56,0.64,1); }
 
   #location-display {
     color: #666; font-size: 13px; text-align: center;
@@ -177,8 +148,7 @@
     .header h1 { font-size: 17px; }
     .tabs button { padding: 8px 3px; font-size: 11px; }
     #preview-icon { width: 60px; height: 60px; }
-    #preview-hug { font-size: 48px; }
-    #draw-canvas { height: 120px; }
+    #preview-emoji { font-size: 48px; }
     .loc-toggle button { padding: 6px 3px; font-size: 10px; }
     .media-btn { padding: 8px; font-size: 11px; }
     #send-btn { padding: 12px; font-size: 15px; }
@@ -189,18 +159,17 @@
 
 <div id="send-view">
   <div class="controls">
-    <div class="header"><h1>Ωχ φιλακια και αγκαλιτσες (ψηφιακες 😒) </h1></div>
+    <div class="header"><h1>Send Love 💕</h1></div>
 
     <div class="card">
       <div class="tabs" id="tabs">
         <button data-type="kiss" class="active">💋 Kiss</button>
         <button data-type="hug">🤗 Hug</button>
-        <button data-type="draw">✏️ Draw</button>
+        <button data-type="papoi">🍌 Papoi</button>
       </div>
       <div id="preview-area">
-        <svg id="preview-icon" viewBox="0 0 24 24" fill="#FF69B4"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-        <div id="preview-hug" style="display:none">🤗</div>
-        <canvas id="draw-canvas"></canvas>
+        <svg id="preview-icon" viewBox="0 0 24 24"><path id="preview-path" fill="#FF69B4" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+        <div id="preview-emoji" style="display:none">🤗</div>
       </div>
     </div>
 
@@ -235,15 +204,15 @@
 </div>
 
 <div id="receive-view" class="hidden">
-  <svg id="kiss-display" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-  <div id="hug-display">🤗</div>
+  <svg id="kiss-display" viewBox="0 0 24 24"><path id="kiss-path" fill="#FF69B4" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+  <div id="emoji-display">🤗</div>
   <div id="location-display"></div>
   <button id="back-btn">← Send another</button>
 </div>
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, limit }
+import { getFirestore, collection, doc, setDoc, onSnapshot, query, orderBy, limit }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { getMessaging, getToken, onMessage }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js';
@@ -259,6 +228,8 @@ const firebaseConfig = {
 
 const IMGBB_KEY = '9e30919b8718be370e22427d93a9060e';
 const VAPID_KEY = 'BHTsXSIaPqWeyIyKZlVIZqp4MKyw5g-7rp6J5VsP4NwqThL_nlItmzNLL2PsKxSy6U3joLywXLrIC5_PEurKHwM';
+const GIPHY_KEY = 'vMggDD6nkMVZAOyf4okMRDnuj3z8Vet9';
+const MAX_FILE_MB = 15;
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
@@ -268,13 +239,22 @@ let selectedColor = '#FF69B4';
 let locMode = 'off';
 let selectedFile = null;
 let lastSendTime = 0;
+let lastShownDocId = null;
+let notifInitialized = false;
+let notifPending = false;
 
 const colors = [
   '#FF69B4','#FF0000','#FF1493','#800080','#9400D3',
   '#0000FF','#00BFFF','#00CED1','#00FF00','#008000',
   '#FFD700','#FFA500','#FF8C00','#8B4513','#000000',
-  '#808080','#FFFFFF','#FFC0CB','#E6E6FA','#40E0D0'
+  '#808080','#F5F5F5','#FFC0CB','#E6E6FA','#40E0D0'
 ];
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
 
 // === Color dots ===
 const colorRow = document.getElementById('color-row');
@@ -282,19 +262,18 @@ colors.forEach(c => {
   const dot = document.createElement('div');
   dot.className = 'color-dot' + (c === selectedColor ? ' selected' : '');
   dot.style.background = c;
-  if (c === '#FFFFFF') dot.style.border = '2px solid #eee';
   dot.onclick = () => {
     selectedColor = c;
     document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('selected'));
     dot.classList.add('selected');
+    document.getElementById('custom-color').value = c;
     applyColor();
   };
   colorRow.appendChild(dot);
 });
 
 function applyColor() {
-  document.getElementById('preview-icon').setAttribute('fill', selectedColor);
-  ctx.strokeStyle = selectedColor;
+  document.getElementById('preview-path').setAttribute('fill', selectedColor);
 }
 
 document.getElementById('custom-color').addEventListener('input', e => {
@@ -315,66 +294,22 @@ document.getElementById('tabs').addEventListener('click', e => {
 
 function updatePreview() {
   const svg = document.getElementById('preview-icon');
-  const hug = document.getElementById('preview-hug');
-  const canvas = document.getElementById('draw-canvas');
+  const emoji = document.getElementById('preview-emoji');
 
   if (selectedType === 'kiss') {
     svg.style.display = 'block';
-    hug.style.display = 'none';
-    canvas.style.display = 'none';
+    emoji.style.display = 'none';
   } else if (selectedType === 'hug') {
     svg.style.display = 'none';
-    hug.style.display = 'block';
-    canvas.style.display = 'none';
-  } else {
+    emoji.style.display = 'block';
+    emoji.textContent = '🤗';
+  } else if (selectedType === 'papoi') {
     svg.style.display = 'none';
-    hug.style.display = 'none';
-    canvas.style.display = 'block';
+    emoji.style.display = 'block';
+    emoji.textContent = '🍌';
   }
 }
-
-// === Drawing canvas ===
-const canvas = document.getElementById('draw-canvas');
-canvas.width = 600;
-canvas.height = 300;
-const ctx = canvas.getContext('2d');
-ctx.lineWidth = 6;
-ctx.lineCap = 'round';
-ctx.lineJoin = 'round';
-ctx.strokeStyle = selectedColor;
-
-let drawing = false;
-function getPos(e) {
-  const r = canvas.getBoundingClientRect();
-  return {
-    x: (e.clientX - r.left) * (canvas.width / r.width),
-    y: (e.clientY - r.top) * (canvas.height / r.height)
-  };
-}
-canvas.addEventListener('pointerdown', e => {
-  drawing = true;
-  const p = getPos(e);
-  ctx.beginPath();
-  ctx.moveTo(p.x, p.y);
-  canvas.setPointerCapture(e.pointerId);
-});
-canvas.addEventListener('pointermove', e => {
-  if (!drawing) return;
-  const p = getPos(e);
-  ctx.lineTo(p.x, p.y);
-  ctx.stroke();
-});
-canvas.addEventListener('pointerup', () => drawing = false);
-canvas.addEventListener('pointercancel', () => drawing = false);
-
-function clearCanvas() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-}
-function isCanvasEmpty() {
-  const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-  for (let i = 3; i < data.length; i += 4) if (data[i] !== 0) return false;
-  return true;
-}
+updatePreview();
 
 // === Location ===
 document.getElementById('loc-toggle').addEventListener('click', e => {
@@ -383,6 +318,7 @@ document.getElementById('loc-toggle').addEventListener('click', e => {
   document.querySelectorAll('#loc-toggle button').forEach(b => b.classList.remove('active'));
   e.target.classList.add('active');
   document.getElementById('custom-loc').classList.toggle('show', locMode === 'text');
+  if (locMode !== 'text') document.getElementById('custom-loc').value = '';
 });
 
 // === Photo ===
@@ -390,16 +326,52 @@ document.getElementById('file-input').addEventListener('change', e => {
   selectedFile = e.target.files[0] || null;
   const preview = document.getElementById('preview-img');
   if (selectedFile) {
+    if (selectedFile.size > MAX_FILE_MB * 1024 * 1024) {
+      alert(`Photo too big (max ${MAX_FILE_MB}MB). Choose a smaller one.`);
+      selectedFile = null;
+      e.target.value = '';
+      preview.classList.remove('show');
+      return;
+    }
     preview.src = URL.createObjectURL(selectedFile);
     preview.classList.add('show');
   } else preview.classList.remove('show');
 });
 
+// === Helpers ===
+async function fetchWithTimeout(url, options, ms = 15000) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), ms);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 async function uploadToImgBB(formData) {
   try {
-    const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, { method: 'POST', body: formData });
+    const res = await fetchWithTimeout(
+      `https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`,
+      { method: 'POST', body: formData },
+      20000
+    );
+    if (!res.ok) return null;
     const data = await res.json();
-    return data.data ? data.data.url : null;
+    return data?.data?.url || null;
+  } catch { return null; }
+}
+
+async function fetchRandomMinionGif() {
+  try {
+    const res = await fetchWithTimeout(
+      `https://api.giphy.com/v1/gifs/random?api_key=${GIPHY_KEY}&tag=minion&rating=g`,
+      {},
+      4000
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data?.data?.images?.original?.url || null;
   } catch { return null; }
 }
 
@@ -413,46 +385,55 @@ document.getElementById('send-btn').addEventListener('click', async () => {
   sendBtn.disabled = true;
   sendBtn.textContent = 'Sending...';
 
-  let location = null;
-  if (locMode === 'gps') {
-    try {
-      const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { timeout: 5000 }));
-      location = { type: 'gps', lat: pos.coords.latitude, lon: pos.coords.longitude };
-    } catch {}
-  } else if (locMode === 'text') {
-    const text = document.getElementById('custom-loc').value.trim();
-    if (text) location = { type: 'text', label: text };
+  try {
+    let location = null;
+    if (locMode === 'gps') {
+      try {
+        const pos = await new Promise((res, rej) =>
+          navigator.geolocation.getCurrentPosition(res, rej, { timeout: 5000 })
+        );
+        location = { type: 'gps', lat: pos.coords.latitude, lon: pos.coords.longitude };
+      } catch {}
+    } else if (locMode === 'text') {
+      const text = document.getElementById('custom-loc').value.trim();
+      if (text) location = { type: 'text', label: text };
+    }
+
+    // Priority: photo > papoi gif > (kiss/hug have no media)
+    let mediaUrl = null;
+    if (selectedFile) {
+      const fd = new FormData();
+      fd.append('image', selectedFile);
+      mediaUrl = await uploadToImgBB(fd);
+    } else if (selectedType === 'papoi') {
+      mediaUrl = await fetchRandomMinionGif();
+    }
+
+    const kissData = {
+      type: selectedType,
+      color: selectedColor,
+      location,
+      mediaUrl,
+      time: now
+    };
+
+    const docRef = doc(collection(db, 'kisses'));
+    lastShownDocId = docRef.id;
+    await setDoc(docRef, kissData);
+
+    selectedFile = null;
+    document.getElementById('file-input').value = '';
+    document.getElementById('preview-img').classList.remove('show');
+    document.getElementById('custom-loc').value = '';
+
+    showReceive(kissData);
+  } catch (err) {
+    console.error('Send failed:', err);
+    alert('Send failed. Check internet.');
+  } finally {
+    sendBtn.disabled = false;
+    sendBtn.textContent = 'SEND 💕';
   }
-
-  let mediaUrl = null;
-  if (selectedType === 'draw' && !isCanvasEmpty()) {
-    const base64 = canvas.toDataURL('image/png').split(',')[1];
-    const fd = new FormData();
-    fd.append('image', base64);
-    mediaUrl = await uploadToImgBB(fd);
-  } else if (selectedFile) {
-    const fd = new FormData();
-    fd.append('image', selectedFile);
-    mediaUrl = await uploadToImgBB(fd);
-  }
-
-  await addDoc(collection(db, 'kisses'), {
-    type: selectedType,
-    color: selectedColor,
-    location,
-    mediaUrl,
-    time: now
-  });
-
-  selectedFile = null;
-  document.getElementById('file-input').value = '';
-  document.getElementById('preview-img').classList.remove('show');
-  document.getElementById('custom-loc').value = '';
-  clearCanvas();
-  sendBtn.disabled = false;
-  sendBtn.textContent = 'SEND 💕';
-
-  showReceive({ type: selectedType, color: selectedColor, location, mediaUrl });
 });
 
 // === Receive ===
@@ -461,23 +442,24 @@ function showReceive(k) {
   document.getElementById('receive-view').classList.remove('hidden');
 
   const svg = document.getElementById('kiss-display');
-  const hug = document.getElementById('hug-display');
-
+  const emoji = document.getElementById('emoji-display');
   svg.classList.remove('bounce');
-  hug.classList.remove('bounce');
+  emoji.classList.remove('bounce');
 
   if (k.mediaUrl) {
     svg.style.display = 'none';
-    hug.style.display = 'none';
+    emoji.style.display = 'none';
   } else if (k.type === 'hug') {
     svg.style.display = 'none';
-    hug.style.display = 'block';
-    void hug.offsetWidth;
-    hug.classList.add('bounce');
+    emoji.style.display = 'block';
+    emoji.textContent = '🤗';
+    void emoji.offsetWidth;
+    emoji.classList.add('bounce');
   } else {
+    // kiss (default)
     svg.style.display = 'block';
-    hug.style.display = 'none';
-    svg.querySelector('path').setAttribute('fill', k.color || '#FF69B4');
+    emoji.style.display = 'none';
+    document.getElementById('kiss-path').setAttribute('fill', k.color || '#FF69B4');
     void svg.offsetWidth;
     svg.classList.add('bounce');
   }
@@ -485,12 +467,14 @@ function showReceive(k) {
   let html = '';
   if (k.location) {
     if (k.location.type === 'gps') {
-      html += `<a href="https://maps.google.com/?q=${k.location.lat},${k.location.lon}" target="_blank">📍 ${k.location.lat.toFixed(3)}, ${k.location.lon.toFixed(3)}</a>`;
+      html += `<a href="https://maps.google.com/?q=${k.location.lat},${k.location.lon}" target="_blank" rel="noopener">📍 ${k.location.lat.toFixed(3)}, ${k.location.lon.toFixed(3)}</a>`;
     } else if (k.location.type === 'text') {
-      html += `📍 ${k.location.label}`;
+      html += `📍 ${escapeHtml(k.location.label)}`;
     }
   }
-  if (k.mediaUrl) html += `<img src="${k.mediaUrl}">`;
+  if (k.mediaUrl) {
+    html += `<img src="${escapeHtml(k.mediaUrl)}" alt="" onerror="this.style.display='none'">`;
+  }
   document.getElementById('location-display').innerHTML = html || (k.type === 'hug' ? '🤗 A hug for you' : '💕');
 }
 
@@ -499,37 +483,71 @@ document.getElementById('back-btn').addEventListener('click', () => {
   document.getElementById('send-view').classList.remove('hidden');
 });
 
-const q = query(collection(db, 'kisses'), orderBy('time', 'desc'), limit(1));
+// === Firestore listener (self-healing) ===
 let firstLoad = true;
-onSnapshot(q, snap => {
-  if (firstLoad) { firstLoad = false; return; }
-  snap.forEach(doc => {
-    const k = doc.data();
-    if (Date.now() - k.time < 10000) showReceive(k);
-  });
-});
+let unsubscribeSnapshot = null;
+
+function startListener() {
+  const q = query(collection(db, 'kisses'), orderBy('time', 'desc'), limit(1));
+  unsubscribeSnapshot = onSnapshot(q,
+    snap => {
+      if (firstLoad) { firstLoad = false; return; }
+      snap.forEach(d => {
+        if (d.id === lastShownDocId) return;
+        showReceive(d.data());
+      });
+    },
+    err => {
+      console.error('Snapshot error, retrying in 3s:', err);
+      if (unsubscribeSnapshot) { try { unsubscribeSnapshot(); } catch {} }
+      setTimeout(startListener, 3000);
+    }
+  );
+}
+startListener();
 
 // === Notifications ===
 document.getElementById('notif-btn').addEventListener('click', async () => {
-  const permission = await Notification.requestPermission();
-  if (permission !== 'granted') return;
-  if ('serviceWorker' in navigator) {
-    try {
-      const reg = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-      const messaging = getMessaging(app);
-      const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: reg });
-      if (token) {
-        await addDoc(collection(db, 'tokens'), { token, time: Date.now() });
-        document.getElementById('notif-btn').textContent = '🔔 Notifications On';
-        document.getElementById('notif-btn').classList.add('on');
-      }
-    } catch (err) {
-      console.log('Notify failed:', err);
-      document.getElementById('notif-btn').textContent = '🔔 Failed';
+  if (notifInitialized || notifPending) return;
+  notifPending = true;
+  const btn = document.getElementById('notif-btn');
+  btn.textContent = '🔔 Working...';
+
+  try {
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+      btn.textContent = '🔔 Tap to retry';
+      return;
     }
+
+    if (!('serviceWorker' in navigator)) {
+      btn.textContent = '🔔 Not supported';
+      return;
+    }
+
+    const reg = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+    const messaging = getMessaging(app);
+    const token = await getToken(messaging, {
+      vapidKey: VAPID_KEY,
+      serviceWorkerRegistration: reg
+    });
+
+    if (token) {
+      await setDoc(doc(collection(db, 'tokens')), { token, time: Date.now() });
+      btn.textContent = '🔔 Notifications On';
+      btn.classList.add('on');
+      notifInitialized = true;
+      onMessage(messaging, p => console.log('Foreground:', p));
+    } else {
+      btn.textContent = '🔔 Tap to retry';
+    }
+  } catch (err) {
+    console.error('Notify failed:', err);
+    btn.textContent = '🔔 Tap to retry';
+  } finally {
+    notifPending = false;
   }
 });
-onMessage(getMessaging(app), p => console.log('Foreground:', p));
 </script>
 
 </body>
