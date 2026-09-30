@@ -40,7 +40,7 @@
   .tabs button {
     flex: 1; padding: 9px 4px; border-radius: 10px;
     border: 1.5px solid #f0d0e0; background: white;
-    font-size: 12px; font-weight: 600; color: #888;
+    font-size: 11px; font-weight: 600; color: #888;
     cursor: pointer; transition: all 0.15s;
   }
   .tabs button.active {
@@ -55,6 +55,19 @@
   }
   #preview-icon { width: 70px; height: 70px; filter: drop-shadow(0 4px 10px rgba(233,30,99,0.2)); }
   #preview-emoji { font-size: 56px; line-height: 1; filter: drop-shadow(0 4px 10px rgba(233,30,99,0.2)); }
+
+  #draw-canvas {
+    width: 100%;
+    max-width: 300px;
+    aspect-ratio: 600 / 280;
+    height: auto;
+    border-radius: 12px;
+    background: white;
+    touch-action: none;
+    cursor: crosshair;
+    box-shadow: inset 0 0 0 1.5px #f0d0e0;
+    display: none;
+  }
 
   .color-row { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; }
   .color-dot {
@@ -146,7 +159,7 @@
     .controls { gap: 7px; }
     .card { padding: 7px; border-radius: 12px; }
     .header h1 { font-size: 17px; }
-    .tabs button { padding: 8px 3px; font-size: 11px; }
+    .tabs button { padding: 8px 2px; font-size: 10px; }
     #preview-icon { width: 60px; height: 60px; }
     #preview-emoji { font-size: 48px; }
     .loc-toggle button { padding: 6px 3px; font-size: 10px; }
@@ -166,10 +179,12 @@
         <button data-type="kiss" class="active">💋 Kiss</button>
         <button data-type="hug">🤗 Hug</button>
         <button data-type="papoi">🍌 Papoi</button>
+        <button data-type="draw">✏️ Draw</button>
       </div>
       <div id="preview-area">
         <svg id="preview-icon" viewBox="0 0 24 24"><path id="preview-path" fill="#FF69B4" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
         <div id="preview-emoji" style="display:none">🤗</div>
+        <canvas id="draw-canvas"></canvas>
       </div>
     </div>
 
@@ -256,6 +271,16 @@ function escapeHtml(s) {
   }[c]));
 }
 
+// === Canvas ===
+const canvas = document.getElementById('draw-canvas');
+canvas.width = 600;
+canvas.height = 280;
+const ctx = canvas.getContext('2d');
+ctx.lineWidth = 6;
+ctx.lineCap = 'round';
+ctx.lineJoin = 'round';
+ctx.strokeStyle = selectedColor;
+
 // === Color dots ===
 const colorRow = document.getElementById('color-row');
 colors.forEach(c => {
@@ -274,6 +299,7 @@ colors.forEach(c => {
 
 function applyColor() {
   document.getElementById('preview-path').setAttribute('fill', selectedColor);
+  ctx.strokeStyle = selectedColor;
 }
 
 document.getElementById('custom-color').addEventListener('input', e => {
@@ -295,21 +321,66 @@ document.getElementById('tabs').addEventListener('click', e => {
 function updatePreview() {
   const svg = document.getElementById('preview-icon');
   const emoji = document.getElementById('preview-emoji');
+  const cv = document.getElementById('draw-canvas');
 
   if (selectedType === 'kiss') {
     svg.style.display = 'block';
     emoji.style.display = 'none';
+    cv.style.display = 'none';
   } else if (selectedType === 'hug') {
     svg.style.display = 'none';
     emoji.style.display = 'block';
     emoji.textContent = '🤗';
+    cv.style.display = 'none';
   } else if (selectedType === 'papoi') {
     svg.style.display = 'none';
     emoji.style.display = 'block';
     emoji.textContent = '🍌';
+    cv.style.display = 'none';
+  } else {
+    svg.style.display = 'none';
+    emoji.style.display = 'none';
+    cv.style.display = 'block';
   }
 }
 updatePreview();
+
+// === Drawing ===
+let drawing = false;
+function getPos(e) {
+  const r = canvas.getBoundingClientRect();
+  return {
+    x: (e.clientX - r.left) * (canvas.width / r.width),
+    y: (e.clientY - r.top) * (canvas.height / r.height)
+  };
+}
+canvas.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  drawing = true;
+  const p = getPos(e);
+  ctx.beginPath();
+  ctx.moveTo(p.x, p.y);
+  try { canvas.setPointerCapture(e.pointerId); } catch {}
+});
+canvas.addEventListener('pointermove', e => {
+  if (!drawing) return;
+  e.preventDefault();
+  const p = getPos(e);
+  ctx.lineTo(p.x, p.y);
+  ctx.stroke();
+});
+canvas.addEventListener('pointerup', e => {
+  drawing = false;
+  try { canvas.releasePointerCapture(e.pointerId); } catch {}
+});
+canvas.addEventListener('pointercancel', () => { drawing = false; });
+
+function clearCanvas() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
+function isCanvasEmpty() {
+  const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+  for (let i = 3; i < data.length; i += 4) if (data[i] !== 0) return false;
+  return true;
+}
 
 // === Location ===
 document.getElementById('loc-toggle').addEventListener('click', e => {
@@ -335,6 +406,7 @@ document.getElementById('file-input').addEventListener('change', e => {
     }
     preview.src = URL.createObjectURL(selectedFile);
     preview.classList.add('show');
+    clearCanvas();
   } else preview.classList.remove('show');
 });
 
@@ -399,7 +471,7 @@ document.getElementById('send-btn').addEventListener('click', async () => {
       if (text) location = { type: 'text', label: text };
     }
 
-    // Priority: photo > papoi gif > (kiss/hug have no media)
+    // Priority: photo > papoi gif > draw > nothing
     let mediaUrl = null;
     if (selectedFile) {
       const fd = new FormData();
@@ -407,6 +479,11 @@ document.getElementById('send-btn').addEventListener('click', async () => {
       mediaUrl = await uploadToImgBB(fd);
     } else if (selectedType === 'papoi') {
       mediaUrl = await fetchRandomMinionGif();
+    } else if (selectedType === 'draw' && !isCanvasEmpty()) {
+      const base64 = canvas.toDataURL('image/png').split(',')[1];
+      const fd = new FormData();
+      fd.append('image', base64);
+      mediaUrl = await uploadToImgBB(fd);
     }
 
     const kissData = {
@@ -425,6 +502,7 @@ document.getElementById('send-btn').addEventListener('click', async () => {
     document.getElementById('file-input').value = '';
     document.getElementById('preview-img').classList.remove('show');
     document.getElementById('custom-loc').value = '';
+    clearCanvas();
 
     showReceive(kissData);
   } catch (err) {
