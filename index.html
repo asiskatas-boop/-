@@ -3,11 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">
-<meta name="theme-color" content="#FF69B4">
+<meta name="theme-color" content="#F4F4F0">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>Kisses 💋</title>
+<title>KISSES</title>
 <link rel="manifest" href="/manifest.json">
 <link rel="apple-touch-icon" href="/icon.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <!-- OneSignal -->
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
@@ -24,177 +28,302 @@
 </script>
 
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html, body { height: 100%; overflow: hidden; overscroll-behavior: none; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; }
-  body {
-    background: linear-gradient(160deg, #ffe6f0 0%, #ffd1e3 40%, #ffb8d1 100%);
-    color: #2d2d2d;
-    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-    display: flex; align-items: center; justify-content: center;
+  :root{
+    --paper:#F4F4F0;
+    --ink:#111111;
+    --red:#E61919;
+    --mono:'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    --macro:'Archivo Black', 'Inter', 'Helvetica Neue', Arial, sans-serif;
   }
 
-  #send-view { display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; height: 100%; padding: 8px; overflow-y: auto; }
-  .controls { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 340px; }
-
-  .header { text-align: center; }
-  .header h1 { font-size: 20px; font-weight: 700; color: #c2185b; }
-
-  .card {
-    background: rgba(255,255,255,0.78);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-radius: 14px;
-    padding: 8px;
-    box-shadow: 0 2px 12px rgba(194,24,91,0.08);
-    border: 1px solid rgba(255,255,255,0.9);
+  *{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{
+    height:100%; overflow:hidden; overscroll-behavior:none;
+    font-family:var(--mono);
+  }
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    display:flex; align-items:center; justify-content:center;
   }
 
-  .section-label { font-size: 9px; font-weight: 700; color: #b088a0; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
-
-  .tabs { display: flex; gap: 5px; }
-  .tabs button {
-    flex: 1; padding: 9px 4px; border-radius: 10px;
-    border: 1.5px solid #f0d0e0; background: white;
-    font-size: 11px; font-weight: 600; color: #888;
-    cursor: pointer; transition: all 0.15s;
-  }
-  .tabs button.active {
-    background: linear-gradient(135deg, #FF69B4, #e91e63);
-    color: white; border-color: transparent;
-    box-shadow: 0 3px 10px rgba(233,30,99,0.25);
+  /* ---- mechanical grain ---- */
+  .noise{
+    position:fixed; inset:0; z-index:9999; pointer-events:none;
+    opacity:.13; mix-blend-mode:multiply;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
   }
 
-  #preview-area {
-    display: flex; justify-content: center; align-items: center;
-    min-height: 70px; padding: 4px; margin-top: 6px;
-  }
-  #preview-icon { width: 70px; height: 70px; filter: drop-shadow(0 4px 10px rgba(233,30,99,0.2)); }
-  #preview-emoji { font-size: 56px; line-height: 1; filter: drop-shadow(0 4px 10px rgba(233,30,99,0.2)); }
-
-  #draw-canvas {
-    width: 100%;
-    max-width: 300px;
-    aspect-ratio: 600 / 280;
-    height: auto;
-    border-radius: 12px;
-    background: white;
-    touch-action: none;
-    cursor: crosshair;
-    box-shadow: inset 0 0 0 1.5px #f0d0e0;
-    display: none;
+  /* ================= SEND VIEW ================= */
+  #send-view{
+    display:flex; flex-direction:column; justify-content:center; align-items:center;
+    width:100%; height:100%; padding:6px; overflow-y:auto;
   }
 
-  .color-row { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; }
-  .color-dot {
-    width: 100%; aspect-ratio: 1; border-radius: 50%;
-    border: 2px solid transparent; cursor: pointer; transition: all 0.15s;
-    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06);
+  .controls{
+    display:grid; gap:1px; width:100%; max-width:380px;
+    background:var(--ink); border:1.5px solid var(--ink);
   }
-  .color-dot.selected { border-color: #2d2d2d; transform: scale(1.2); box-shadow: none; }
+  .controls > *{ background:var(--paper); }
 
-  #custom-color { width: 100%; height: 30px; border: none; border-radius: 8px; cursor: pointer; background: white; margin-top: 5px; }
-
-  .photo-row { display: flex; align-items: center; gap: 8px; }
-  .media-btn {
-    flex: 1; padding: 9px; border-radius: 10px;
-    border: 1.5px dashed #f0a0c0; background: white;
-    font-size: 12px; font-weight: 500; color: #c2185b;
-    cursor: pointer; text-align: center;
+  /* ---- header ---- */
+  .header{ padding:9px 9px 8px; }
+  .meta-row{
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:8.5px; font-weight:500; letter-spacing:.16em;
+    text-transform:uppercase; color:var(--ink);
   }
-  #preview-img { width: 42px; height: 42px; border-radius: 10px; display: none; object-fit: cover; }
-  #preview-img.show { display: block; }
-  #file-input { display: none; }
-
-  .loc-toggle { display: flex; gap: 5px; }
-  .loc-toggle button {
-    flex: 1; padding: 7px 4px; border-radius: 8px;
-    border: 1.5px solid #f0d0e0; background: white;
-    font-size: 11px; font-weight: 600; color: #666;
-    cursor: pointer; transition: all 0.15s;
+  .header h1{
+    font-family:var(--macro);
+    font-size:clamp(2.1rem, 12vw, 4rem);
+    line-height:.85; letter-spacing:-.05em;
+    text-transform:uppercase; color:var(--ink);
+    margin:5px 0 6px;
   }
-  .loc-toggle button.active {
-    background: linear-gradient(135deg, #FF69B4, #e91e63);
-    color: white; border-color: transparent;
+  .stripes{
+    height:6px; margin:6px 0;
+    background:repeating-linear-gradient(45deg,
+      var(--red) 0 7px, var(--ink) 7px 14px);
   }
-  #custom-loc {
-    display: none; width: 100%; padding: 7px 10px;
-    border-radius: 8px; border: 1.5px solid #f0d0e0;
-    font-size: 12px; margin-top: 5px; background: white;
+  .barcode{
+    height:12px; margin-top:5px;
+    background-image:repeating-linear-gradient(90deg,
+      var(--ink) 0 1px, transparent 1px 3px,
+      var(--ink) 3px 4px, transparent 4px 9px);
   }
-  #custom-loc.show { display: block; }
-  #custom-loc:focus { outline: none; border-color: #FF69B4; }
 
-  #send-btn {
-    padding: 14px; border-radius: 14px; border: none;
-    background: linear-gradient(135deg, #FF69B4 0%, #e91e63 100%);
-    color: white; font-size: 16px; font-weight: 700;
-    letter-spacing: 0.5px; cursor: pointer;
-    box-shadow: 0 6px 20px rgba(233,30,99,0.35);
-    transition: all 0.15s;
+  /* ---- cards ---- */
+  .card{ padding:8px; border-radius:0; }
+  .section-label{
+    font-size:9px; font-weight:700; letter-spacing:.18em;
+    text-transform:uppercase; color:var(--ink);
+    border-bottom:1px solid var(--ink);
+    padding-bottom:4px; margin-bottom:7px;
   }
-  #send-btn:active { transform: scale(0.97); }
-  #send-btn:disabled { opacity: 0.6; }
 
-  #notif-btn {
-    padding: 7px; border-radius: 10px;
-    border: 1.5px solid #FF69B4; background: transparent;
-    color: #FF69B4; font-size: 10px; font-weight: 500;
-    cursor: pointer;
+  /* ---- tabs ---- */
+  .tabs{
+    display:grid; grid-template-columns:repeat(4,1fr); gap:1px;
+    background:var(--ink); border:1px solid var(--ink);
   }
-  #notif-btn.on { background: linear-gradient(135deg, #FF69B4, #e91e63); color: white; border-color: transparent; }
-
-  #receive-view {
-    display: flex; flex-direction: column; align-items: center;
-    justify-content: center; width: 100%; height: 100%;
-    padding: 20px; gap: 16px; animation: fadeIn 0.3s;
+  .tabs button{
+    border:none; border-radius:0; background:var(--paper);
+    font-family:var(--mono); font-size:10px; font-weight:600;
+    letter-spacing:.08em; text-transform:uppercase; color:var(--ink);
+    padding:11px 2px; cursor:pointer;
   }
-  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .tabs button.active{ background:var(--ink); color:var(--paper); }
 
-  #kiss-display { width: 140px; height: 140px; filter: drop-shadow(0 8px 20px rgba(233,30,99,0.25)); }
-  #kiss-display.bounce { animation: kissPop 0.5s cubic-bezier(0.34,1.56,0.64,1); }
-  @keyframes kissPop { 0% { transform: scale(0.5); } 50% { transform: scale(1.4); } 100% { transform: scale(1); } }
-
-  #emoji-display { font-size: 130px; line-height: 1; display: none; }
-  #emoji-display.bounce { animation: kissPop 0.5s cubic-bezier(0.34,1.56,0.64,1); }
-
-  #location-display {
-    color: #666; font-size: 13px; text-align: center;
-    max-width: 90vw; padding: 8px 14px;
-    background: rgba(255,255,255,0.7); border-radius: 12px;
-    line-height: 1.5; word-break: break-word;
+  /* ---- preview viewport ---- */
+  #preview-area{
+    display:flex; justify-content:center; align-items:center;
+    min-height:96px; padding:10px; margin-top:8px;
+    border:1px solid var(--ink);
+    background-image:
+      linear-gradient(rgba(17,17,17,.10) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(17,17,17,.10) 1px, transparent 1px);
+    background-size:12px 12px;
   }
-  #location-display a { color: #e91e63; text-decoration: none; font-weight: 500; }
-  #location-display img { max-width: min(80vw, 280px); max-height: 40vh; border-radius: 14px; margin-top: 8px; display: block; object-fit: contain; box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
+  #preview-icon{ width:72px; height:72px; }
+  #preview-emoji{ font-size:56px; line-height:1; }
 
-  #back-btn { padding: 10px 24px; border-radius: 12px; border: none; background: rgba(255,255,255,0.9); color: #c2185b; font-size: 13px; font-weight: 600; cursor: pointer; }
+  #draw-canvas{
+    width:100%; max-width:300px; aspect-ratio:600 / 280; height:auto;
+    border:1px solid var(--ink); border-radius:0; background:#fff;
+    touch-action:none; cursor:crosshair; display:none;
+  }
 
-  .hidden { display: none !important; }
+  /* ---- color ---- */
+  .color-row{ display:grid; grid-template-columns:repeat(10,1fr); gap:3px; }
+  .color-dot{
+    width:100%; aspect-ratio:1; border-radius:0;
+    border:1px solid var(--ink); cursor:pointer;
+  }
+  .color-dot.selected{
+    outline:2px solid var(--red); outline-offset:1px;
+    position:relative; z-index:2;
+  }
+  #custom-color{
+    width:100%; height:34px; margin-top:7px; padding:0;
+    border:1px solid var(--ink); border-radius:0;
+    background:var(--paper); cursor:pointer;
+  }
+  #custom-color::-webkit-color-swatch-wrapper{ padding:0; }
+  #custom-color::-webkit-color-swatch{ border:none; border-radius:0; }
 
-  @media (max-width: 380px) {
-    .controls { gap: 7px; }
-    .card { padding: 7px; border-radius: 12px; }
-    .header h1 { font-size: 17px; }
-    .tabs button { padding: 8px 2px; font-size: 10px; }
-    #preview-icon { width: 60px; height: 60px; }
-    #preview-emoji { font-size: 48px; }
-    .loc-toggle button { padding: 6px 3px; font-size: 10px; }
-    .media-btn { padding: 8px; font-size: 11px; }
-    #send-btn { padding: 12px; font-size: 15px; }
+  /* ---- media ---- */
+  .photo-row{ display:flex; align-items:center; gap:8px; }
+  .media-btn{
+    flex:1; padding:11px; border:1px dashed var(--ink); border-radius:0;
+    background:var(--paper); color:var(--ink);
+    font-family:var(--mono); font-size:10px; font-weight:600;
+    letter-spacing:.12em; text-transform:uppercase;
+    cursor:pointer; text-align:center;
+  }
+  #preview-img{
+    width:44px; height:44px; border:1px solid var(--ink);
+    border-radius:0; display:none; object-fit:cover;
+  }
+  #preview-img.show{ display:block; }
+  #file-input{ display:none; }
+
+  /* ---- location ---- */
+  .loc-toggle{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:1px;
+    background:var(--ink); border:1px solid var(--ink);
+  }
+  .loc-toggle button{
+    border:none; border-radius:0; background:var(--paper);
+    font-family:var(--mono); font-size:10px; font-weight:600;
+    letter-spacing:.10em; text-transform:uppercase; color:var(--ink);
+    padding:9px 4px; cursor:pointer;
+  }
+  .loc-toggle button.active{ background:var(--ink); color:var(--paper); }
+
+  #custom-loc{
+    display:none; width:100%; padding:10px; margin-top:7px;
+    border:1px solid var(--ink); border-radius:0;
+    font-family:var(--mono); font-size:11px; letter-spacing:.08em;
+    text-transform:uppercase; background:var(--paper); color:var(--ink);
+  }
+  #custom-loc.show{ display:block; }
+  #custom-loc::placeholder{ color:rgba(17,17,17,.40); }
+  #custom-loc:focus{ outline:2px solid var(--ink); outline-offset:-2px; }
+
+  /* ---- action buttons ---- */
+  #notif-btn{
+    border:none; border-radius:0; background:var(--paper);
+    color:var(--ink); font-family:var(--mono);
+    font-size:9px; font-weight:600; letter-spacing:.16em;
+    text-transform:uppercase; padding:11px; cursor:pointer;
+  }
+  #notif-btn.on{ background:var(--ink); color:var(--paper); }
+
+  #send-btn{
+    border:none; border-radius:0;
+    background:var(--red); color:#fff;
+    font-family:var(--macro); font-size:20px;
+    letter-spacing:.04em; text-transform:uppercase;
+    padding:18px; cursor:pointer;
+  }
+  #send-btn:active{ background:var(--ink); }
+  #send-btn:disabled{ background:rgba(17,17,17,.35); }
+
+  /* ================= RECEIVE VIEW ================= */
+  #receive-view{
+    position:relative;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    width:100%; height:100%; padding:52px 18px 40px; gap:18px;
+    background-color:var(--paper);
+    background-image:radial-gradient(rgba(17,17,17,.13) 0.9px, transparent 1px);
+    background-size:6px 6px;
+    animation:fadeIn .3s;
+  }
+  @keyframes fadeIn{ from{opacity:0} to{opacity:1} }
+
+  .rx-bar{
+    position:absolute; top:0; left:0; right:0;
+    display:flex; justify-content:space-between; align-items:center;
+    padding:12px 14px 10px;
+    font-size:9px; font-weight:600; letter-spacing:.16em;
+    text-transform:uppercase; color:var(--ink);
+    border-bottom:2px solid var(--red);
+    background:var(--paper);
+  }
+
+  .frame{ position:absolute; inset:8px; pointer-events:none; }
+  .frame span{
+    position:absolute; font-family:var(--mono);
+    font-size:14px; line-height:1; color:var(--ink);
+  }
+  .frame span:nth-child(1){ top:0; left:0; }
+  .frame span:nth-child(2){ top:0; right:0; }
+  .frame span:nth-child(3){ bottom:0; left:0; }
+  .frame span:nth-child(4){ bottom:0; right:0; }
+
+  #kiss-display{ width:150px; height:150px; }
+  #kiss-display.bounce{ animation:kissPop .5s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes kissPop{
+    0%{ transform:scale(.5) }
+    50%{ transform:scale(1.4) }
+    100%{ transform:scale(1) }
+  }
+
+  #emoji-display{ font-size:140px; line-height:1; display:none; }
+  #emoji-display.bounce{ animation:kissPop .5s cubic-bezier(.34,1.56,.64,1); }
+
+  #location-display{
+    max-width:min(88vw, 380px); padding:10px 12px;
+    border:1.5px solid var(--ink); border-radius:0;
+    background:var(--paper); color:var(--ink);
+    font-size:10px; letter-spacing:.12em; text-transform:uppercase;
+    line-height:1.7; text-align:left; word-break:break-word;
+  }
+  #location-display a{
+    color:var(--ink); text-decoration:none;
+    border-bottom:2px solid var(--red); font-weight:600;
+  }
+  #location-display img{
+    max-width:min(78vw, 300px); max-height:38vh;
+    margin-top:10px; display:block; object-fit:contain;
+    border:1.5px solid var(--ink); border-radius:0;
+  }
+
+  #back-btn{
+    padding:12px 22px;
+    border:1px solid var(--ink); border-radius:0;
+    background:var(--paper); color:var(--ink);
+    font-family:var(--mono); font-size:10px; font-weight:600;
+    letter-spacing:.16em; text-transform:uppercase; cursor:pointer;
+  }
+  #back-btn:active{ background:var(--ink); color:var(--paper); }
+
+  .hidden{ display:none !important; }
+
+  @media (max-width:380px){
+    .header h1{ font-size:clamp(1.9rem, 11.5vw, 3rem); }
+    .header{ padding:8px 8px 7px; }
+    .card{ padding:7px; }
+    .tabs button{ padding:10px 2px; font-size:9px; }
+    .loc-toggle button{ padding:8px 3px; font-size:9px; }
+    #preview-icon{ width:62px; height:62px; }
+    #preview-emoji{ font-size:48px; }
+    #preview-area{ min-height:84px; }
+    #send-btn{ padding:15px; font-size:18px; }
+    #kiss-display{ width:130px; height:130px; }
+    #emoji-display{ font-size:120px; }
   }
 </style>
 </head>
 <body>
 
+<div class="noise" aria-hidden="true"></div>
+
 <div id="send-view">
   <div class="controls">
-    <div class="header"><h1>Send Love 💕</h1></div>
+
+    <header class="header">
+      <div class="meta-row">
+        <span>UNIT / K-01</span>
+        <span>REV 2.6</span>
+        <span>&reg;</span>
+      </div>
+      <h1>SEND<br>LOVE</h1>
+      <div class="stripes"></div>
+      <div class="meta-row">
+        <span>[ AFFECTION TRANSFER ]</span>
+        <span>2026 &copy;</span>
+      </div>
+      <div class="barcode" aria-hidden="true"></div>
+    </header>
 
     <div class="card">
       <div class="tabs" id="tabs">
-        <button data-type="kiss" class="active">💋 Kiss</button>
-        <button data-type="hug">🤗 Hug</button>
-        <button data-type="papoi">🍌 Papoi</button>
-        <button data-type="draw">✏️ Draw</button>
+        <button data-type="kiss" class="active">💋 KISS</button>
+        <button data-type="hug">🤗 HUG</button>
+        <button data-type="papoi">🍌 PAPOI</button>
+        <button data-type="draw">✏️ DRAW</button>
       </div>
       <div id="preview-area">
         <svg id="preview-icon" viewBox="0 0 24 24"><path id="preview-path" fill="#FF69B4" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
@@ -204,40 +333,48 @@
     </div>
 
     <div class="card">
-      <div class="section-label">Color</div>
+      <div class="section-label">[ COLOR ]</div>
       <div class="color-row" id="color-row"></div>
       <input type="color" id="custom-color" value="#FF69B4">
     </div>
 
     <div class="card">
-      <div class="section-label">Photo</div>
+      <div class="section-label">[ MEDIA ]</div>
       <div class="photo-row">
-        <button class="media-btn" onclick="document.getElementById('file-input').click()">📷 Add photo / GIF</button>
+        <button class="media-btn" onclick="document.getElementById('file-input').click()">+ PHOTO / GIF</button>
         <img id="preview-img">
       </div>
       <input type="file" id="file-input" accept="image/*">
     </div>
 
     <div class="card">
-      <div class="section-label">Location</div>
+      <div class="section-label">[ LOCATION ]</div>
       <div class="loc-toggle" id="loc-toggle">
-        <button data-mode="off" class="active">Off</button>
+        <button data-mode="off" class="active">OFF</button>
         <button data-mode="gps">GPS</button>
-        <button data-mode="text">Type</button>
+        <button data-mode="text">TYPE</button>
       </div>
-      <input type="text" id="custom-loc" placeholder="Type a location...">
+      <input type="text" id="custom-loc" placeholder="TYPE A LOCATION...">
     </div>
 
-    <button id="notif-btn">🔔 Enable Notifications</button>
-    <button id="send-btn">SEND 💕</button>
+    <button id="notif-btn">🔔 ENABLE NOTIFICATIONS</button>
+    <button id="send-btn">SEND</button>
+
   </div>
 </div>
 
 <div id="receive-view" class="hidden">
+  <div class="rx-bar">
+    <span id="rx-label">[ INCOMING ]</span>
+    <span>RX / 001</span>
+  </div>
+  <div class="frame" aria-hidden="true">
+    <span>+</span><span>+</span><span>+</span><span>+</span>
+  </div>
   <svg id="kiss-display" viewBox="0 0 24 24"><path id="kiss-path" fill="#FF69B4" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
   <div id="emoji-display">🤗</div>
   <div id="location-display"></div>
-  <button id="back-btn">← Send another</button>
+  <button id="back-btn">&lt; SEND ANOTHER</button>
 </div>
 
 <script type="module">
@@ -257,7 +394,6 @@ const firebaseConfig = {
 const IMGBB_KEY = '9e30919b8718be370e22427d93a9060e';
 const GIPHY_KEY = 'vMggDD6nkMVZAOyf4okMRDnuj3z8Vet9';
 const ONESIGNAL_APP_ID = '6752ffdc-ebef-4aec-b9c7-ccb73f791cfd';
-const ONESIGNAL_REST_KEY = '6752ffdc-ebef-4aec-b9c7-ccb73f791cfd';
 const MAX_FILE_MB = 15;
 
 const app = initializeApp(firebaseConfig);
@@ -467,12 +603,9 @@ async function sendOneSignalNotification(type) {
   else if (type === 'draw') body = 'A drawing! ✏️';
 
   try {
-    const res = await fetch('https://onesignal.com/api/v1/notifications', {
+    const res = await fetch('https://late-unit-7337.asiskatas.workers.dev', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Basic ${ONESIGNAL_REST_KEY}`
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         app_id: ONESIGNAL_APP_ID,
         included_segments: ['Subscribed Users'],
@@ -482,9 +615,9 @@ async function sendOneSignalNotification(type) {
       })
     });
     const result = await res.json();
-    console.log('OneSignal result:', result);
+    console.log('OneSignal proxy result:', result);
   } catch (err) {
-    console.log('OneSignal failed:', err);
+    console.log('OneSignal proxy failed:', err);
   }
 }
 
@@ -496,7 +629,7 @@ document.getElementById('send-btn').addEventListener('click', async () => {
 
   const sendBtn = document.getElementById('send-btn');
   sendBtn.disabled = true;
-  sendBtn.textContent = 'Sending...';
+  sendBtn.textContent = 'SENDING';
 
   try {
     let location = null;
@@ -538,7 +671,6 @@ document.getElementById('send-btn').addEventListener('click', async () => {
     lastShownDocId = docRef.id;
     await setDoc(docRef, kissData);
 
-    // Send notification (don't wait for it)
     sendOneSignalNotification(selectedType);
 
     selectedFile = null;
@@ -553,12 +685,15 @@ document.getElementById('send-btn').addEventListener('click', async () => {
     alert('Send failed. Check internet.');
   } finally {
     sendBtn.disabled = false;
-    sendBtn.textContent = 'SEND 💕';
+    sendBtn.textContent = 'SEND';
   }
 });
 
 // === Receive ===
 function showReceive(k) {
+  document.getElementById('rx-label').textContent =
+    '[ INCOMING / ' + String(k.type || 'kiss').toUpperCase() + ' ]';
+
   document.getElementById('send-view').classList.add('hidden');
   document.getElementById('receive-view').classList.remove('hidden');
 
@@ -595,7 +730,7 @@ function showReceive(k) {
   if (k.mediaUrl) {
     html += `<img src="${escapeHtml(k.mediaUrl)}" alt="" onerror="this.style.display='none'">`;
   }
-  document.getElementById('location-display').innerHTML = html || (k.type === 'hug' ? '🤗 A hug for you' : '💕');
+  document.getElementById('location-display').innerHTML = html || (k.type === 'hug' ? '🤗 A HUG FOR YOU' : '💕');
 }
 
 document.getElementById('back-btn').addEventListener('click', () => {
@@ -630,23 +765,23 @@ startListener();
 document.getElementById('notif-btn').addEventListener('click', async () => {
   if (notifInitialized) return;
   const btn = document.getElementById('notif-btn');
-  btn.textContent = '🔔 Working...';
+  btn.textContent = '🔔 WORKING...';
 
   try {
     await window.OneSignalDeferred.push(async function(OneSignal) {
       await OneSignal.Notifications.requestPermission();
       const granted = OneSignal.Notifications.permission;
       if (granted) {
-        btn.textContent = '🔔 Notifications On';
+        btn.textContent = '🔔 NOTIFICATIONS ON';
         btn.classList.add('on');
         notifInitialized = true;
       } else {
-        btn.textContent = '🔔 Tap to retry';
+        btn.textContent = '🔔 TAP TO RETRY';
       }
     });
   } catch (err) {
     console.error('Notify failed:', err);
-    btn.textContent = '🔔 Tap to retry';
+    btn.textContent = '🔔 TAP TO RETRY';
   }
 });
 </script>
