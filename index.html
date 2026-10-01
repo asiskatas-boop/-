@@ -24,6 +24,16 @@
       notifyButton: { enable: false },
       allowLocalhostAsSecureOrigin: true
     });
+
+    // When a notification is tapped, the Firestore listener below will pick up
+    // the latest kiss (thanks to the first-load grace window). We just log here.
+    try {
+      OneSignal.Notifications.addEventListener('click', (event) => {
+        console.log('Notification clicked:', event);
+      });
+    } catch (e) {
+      console.log('OneSignal click listener failed:', e);
+    }
   });
 </script>
 
@@ -342,7 +352,7 @@
       <div class="section-label">[ MEDIA ]</div>
       <div class="photo-row">
         <button class="media-btn" onclick="document.getElementById('file-input').click()">+ PHOTO / GIF</button>
-        <img id="preview-img">
+        <img id="preview-img" alt="">
       </div>
       <input type="file" id="file-input" accept="image/*">
     </div>
@@ -396,13 +406,20 @@ const GIPHY_KEY = 'vMggDD6nkMVZAOyf4okMRDnuj3z8Vet9';
 const ONESIGNAL_APP_ID = '6752ffdc-ebef-4aec-b9c7-ccb73f791cfd';
 const MAX_FILE_MB = 15;
 
+// How recent a kiss must be (on first snapshot) to auto-show on app open.
+// This is what makes tapping a notification actually display the kiss.
+const FIRST_LOAD_GRACE_MS = 60000;
+
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+
+const APP_START_TIME = Date.now();
 
 let selectedType = 'kiss';
 let selectedColor = '#FF69B4';
 let locMode = 'off';
 let selectedFile = null;
+let previewObjectUrl = null;
 let lastSendTime = 0;
 let lastShownDocId = null;
 let notifInitialized = false;
@@ -472,23 +489,19 @@ function updatePreview() {
   const emoji = document.getElementById('preview-emoji');
   const cv = document.getElementById('draw-canvas');
 
+  svg.style.display = 'none';
+  emoji.style.display = 'none';
+  cv.style.display = 'none';
+
   if (selectedType === 'kiss') {
     svg.style.display = 'block';
-    emoji.style.display = 'none';
-    cv.style.display = 'none';
   } else if (selectedType === 'hug') {
-    svg.style.display = 'none';
     emoji.style.display = 'block';
     emoji.textContent = '🤗';
-    cv.style.display = 'none';
   } else if (selectedType === 'papoi') {
-    svg.style.display = 'none';
     emoji.style.display = 'block';
     emoji.textContent = '🍌';
-    cv.style.display = 'none';
   } else {
-    svg.style.display = 'none';
-    emoji.style.display = 'none';
     cv.style.display = 'block';
   }
 }
@@ -542,21 +555,44 @@ document.getElementById('loc-toggle').addEventListener('click', e => {
 });
 
 // === Photo ===
-document.getElementById('file-input').addEventListener('change', e => {
-  selectedFile = e.target.files[0] || null;
-  const preview = document.getElementById('preview-img');
-  if (selectedFile) {
-    if (selectedFile.size > MAX_FILE_MB * 1024 * 1024) {
-      alert(`Photo too big (max ${MAX_FILE_MB}MB). Choose a smaller one.`);
-      selectedFile = null;
-      e.target.value = '';
-      preview.classList.remove('show');
-      return;
-    }
-    preview.src = URL.createObjectURL(selectedFile);
-    preview.classList.add('show');
-    clearCanvas();
-  } else preview.classList.remove('show');
+const fileInput = document.getElementById('file-input');
+const previewImg = document.getElementById('preview-img');
+
+function clearSelectedFile() {
+  selectedFile = null;
+  fileInput.value = '';
+  previewImg.classList.remove('show');
+  previewImg.removeAttribute('src');
+  if (previewObjectUrl) {
+    URL.revokeObjectURL(previewObjectUrl);
+    previewObjectUrl = null;
+  }
+}
+
+fileInput.addEventListener('change', e => {
+  const file = e.target.files[0] || null;
+
+  if (previewObjectUrl) {
+    URL.revokeObjectURL(previewObjectUrl);
+    previewObjectUrl = null;
+  }
+
+  if (!file) {
+    clearSelectedFile();
+    return;
+  }
+
+  if (file.size > MAX_FILE_MB * 1024 * 1024) {
+    alert(`Photo too big (max ${MAX_FILE_MB}MB). Choose a smaller one.`);
+    clearSelectedFile();
+    return;
+  }
+
+  selectedFile = file;
+  previewObjectUrl = URL.createObjectURL(file);
+  previewImg.src = previewObjectUrl;
+  previewImg.classList.add('show');
+  clearCanvas();
 });
 
 // === Helpers ===
@@ -603,17 +639,23 @@ async function sendOneSignalNotification(type) {
   else if (type === 'draw') body = 'A drawing! ✏️';
 
   try {
-    const res = await fetch('https://late-unit-7337.asiskatas.workers.dev', {
+    const res = await fetchWithTimeout('https://late-unit-7337.asiskatas.workers.dev', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         app_id: ONESIGNAL_APP_ID,
-        included_segments: ['Subscribed Users'],
+        // Correct segment for this OneSignal project:
+        included_segments: ['Total Subscriptions'],
         headings: { en: 'Kisses 💋' },
         contents: { en: body },
         chrome_web_icon: 'https://whimsical-stardust-19fb53.netlify.app/icon.png'
       })
-    });
+    }, 12000);
+
+    if (!res.ok) {
+      console.log('OneSignal proxy HTTP error:', res.status);
+      return;
+    }
     const result = await res.json();
     console.log('OneSignal proxy result:', result);
   } catch (err) {
@@ -645,17 +687,21 @@ document.getElementById('send-btn').addEventListener('click', async () => {
       if (text) location = { type: 'text', label: text };
     }
 
+    // Priority: the selected tab wins over a leftover photo.
+    // (Previously a stale photo could hijack PAPOI / DRAW.)
     let mediaUrl = null;
-    if (selectedFile) {
+    if (selectedType === 'papoi') {
+      mediaUrl = await fetchRandomMinionGif();
+    } else if (selectedType === 'draw') {
+      if (!isCanvasEmpty()) {
+        const base64 = canvas.toDataURL('image/png').split(',')[1];
+        const fd = new FormData();
+        fd.append('image', base64);
+        mediaUrl = await uploadToImgBB(fd);
+      }
+    } else if (selectedFile) {
       const fd = new FormData();
       fd.append('image', selectedFile);
-      mediaUrl = await uploadToImgBB(fd);
-    } else if (selectedType === 'papoi') {
-      mediaUrl = await fetchRandomMinionGif();
-    } else if (selectedType === 'draw' && !isCanvasEmpty()) {
-      const base64 = canvas.toDataURL('image/png').split(',')[1];
-      const fd = new FormData();
-      fd.append('image', base64);
       mediaUrl = await uploadToImgBB(fd);
     }
 
@@ -668,14 +714,12 @@ document.getElementById('send-btn').addEventListener('click', async () => {
     };
 
     const docRef = doc(collection(db, 'kisses'));
-    lastShownDocId = docRef.id;
     await setDoc(docRef, kissData);
+    lastShownDocId = docRef.id;
 
     sendOneSignalNotification(selectedType);
 
-    selectedFile = null;
-    document.getElementById('file-input').value = '';
-    document.getElementById('preview-img').classList.remove('show');
+    clearSelectedFile();
     document.getElementById('custom-loc').value = '';
     clearCanvas();
 
@@ -691,46 +735,77 @@ document.getElementById('send-btn').addEventListener('click', async () => {
 
 // === Receive ===
 function showReceive(k) {
+  const type = (k && k.type) ? k.type : 'kiss';
+
   document.getElementById('rx-label').textContent =
-    '[ INCOMING / ' + String(k.type || 'kiss').toUpperCase() + ' ]';
+    '[ INCOMING / ' + String(type).toUpperCase() + ' ]';
 
   document.getElementById('send-view').classList.add('hidden');
   document.getElementById('receive-view').classList.remove('hidden');
 
   const svg = document.getElementById('kiss-display');
   const emoji = document.getElementById('emoji-display');
+  const locDisplay = document.getElementById('location-display');
+
   svg.classList.remove('bounce');
   emoji.classList.remove('bounce');
+  svg.style.display = 'none';
+  emoji.style.display = 'none';
 
-  if (k.mediaUrl) {
-    svg.style.display = 'none';
-    emoji.style.display = 'none';
-  } else if (k.type === 'hug') {
-    svg.style.display = 'none';
-    emoji.style.display = 'block';
-    emoji.textContent = '🤗';
-    void emoji.offsetWidth;
-    emoji.classList.add('bounce');
-  } else {
-    svg.style.display = 'block';
-    emoji.style.display = 'none';
-    document.getElementById('kiss-path').setAttribute('fill', k.color || '#FF69B4');
-    void svg.offsetWidth;
-    svg.classList.add('bounce');
-  }
+  const fallbackEmoji =
+    type === 'hug'   ? '🤗' :
+    type === 'papoi' ? '🍌' :
+    type === 'draw'  ? '✏️' : null;
+
+  const showFallbackGraphic = () => {
+    if (fallbackEmoji) {
+      emoji.style.display = 'block';
+      emoji.textContent = fallbackEmoji;
+      void emoji.offsetWidth;
+      emoji.classList.add('bounce');
+    } else {
+      svg.style.display = 'block';
+      document.getElementById('kiss-path').setAttribute('fill', k.color || '#FF69B4');
+      void svg.offsetWidth;
+      svg.classList.add('bounce');
+    }
+  };
+
+  // If there's a media URL, the graphic lives inside #location-display.
+  // If there isn't, show the type-appropriate fallback graphic.
+  if (!k.mediaUrl) showFallbackGraphic();
 
   let html = '';
-  if (k.location) {
-    if (k.location.type === 'gps') {
-      html += `<a href="https://maps.google.com/?q=${k.location.lat},${k.location.lon}" target="_blank" rel="noopener">📍 ${k.location.lat.toFixed(3)}, ${k.location.lon.toFixed(3)}</a>`;
-    } else if (k.location.type === 'text') {
-      html += `📍 ${escapeHtml(k.location.label)}`;
+  const loc = k.location;
+  if (loc && typeof loc === 'object') {
+    if (loc.type === 'gps' && Number.isFinite(loc.lat) && Number.isFinite(loc.lon)) {
+      html += `<a href="https://maps.google.com/?q=${loc.lat},${loc.lon}" target="_blank" rel="noopener">📍 ${loc.lat.toFixed(3)}, ${loc.lon.toFixed(3)}</a>`;
+    } else if (loc.type === 'text' && loc.label) {
+      html += `📍 ${escapeHtml(loc.label)}`;
     }
   }
+
   if (k.mediaUrl) {
-    html += `<img src="${escapeHtml(k.mediaUrl)}" alt="" onerror="this.style.display='none'">`;
+    html += `<img src="${escapeHtml(k.mediaUrl)}" alt="">`;
   }
-  document.getElementById('location-display').innerHTML = html || (k.type === 'hug' ? '🤗 A HUG FOR YOU' : '💕');
+
+  const fallbackText =
+    type === 'hug'   ? '🤗 A HUG FOR YOU' :
+    type === 'papoi' ? '🍌 PAPOI!' :
+    type === 'draw'  ? '✏️ A DRAWING' : '💕';
+
+  locDisplay.innerHTML = html || fallbackText;
+
+  // Broken-media handling: remove the dead image and show the fallback graphic
+  // instead of leaving an empty screen.
+  const img = locDisplay.querySelector('img');
+  if (img) {
+    img.addEventListener('error', () => {
+      img.remove();
+      showFallbackGraphic();
+      if (!locDisplay.textContent.trim()) locDisplay.textContent = '⚠️ MEDIA UNAVAILABLE';
+    });
+  }
 }
 
 document.getElementById('back-btn').addEventListener('click', () => {
@@ -744,17 +819,34 @@ let unsubscribeSnapshot = null;
 
 function startListener() {
   const q = query(collection(db, 'kisses'), orderBy('time', 'desc'), limit(1));
+
   unsubscribeSnapshot = onSnapshot(q,
     snap => {
-      if (firstLoad) { firstLoad = false; return; }
+      const wasFirstLoad = firstLoad;
+
       snap.forEach(d => {
         if (d.id === lastShownDocId) return;
-        showReceive(d.data());
+
+        const data = d.data();
+
+        // On the very first snapshot, only auto-show kisses that are recent.
+        // This prevents showing an old kiss on app open, but DOES show the kiss
+        // when the user opens the app by tapping its notification.
+        if (wasFirstLoad) {
+          const t = typeof data.time === 'number' ? data.time : 0;
+          if (APP_START_TIME - t > FIRST_LOAD_GRACE_MS) return;
+        }
+
+        lastShownDocId = d.id;
+        showReceive(data);
       });
+
+      firstLoad = false;
     },
     err => {
       console.error('Snapshot error, retrying in 3s:', err);
       if (unsubscribeSnapshot) { try { unsubscribeSnapshot(); } catch {} }
+      firstLoad = false; // don't re-apply the grace window on reconnect
       setTimeout(startListener, 3000);
     }
   );
@@ -765,23 +857,23 @@ startListener();
 document.getElementById('notif-btn').addEventListener('click', async () => {
   if (notifInitialized) return;
   const btn = document.getElementById('notif-btn');
+  const original = btn.textContent;
   btn.textContent = '🔔 WORKING...';
 
   try {
     await window.OneSignalDeferred.push(async function(OneSignal) {
-      await OneSignal.Notifications.requestPermission();
-      const granted = OneSignal.Notifications.permission;
+      const granted = await OneSignal.Notifications.requestPermission();
       if (granted) {
         btn.textContent = '🔔 NOTIFICATIONS ON';
         btn.classList.add('on');
         notifInitialized = true;
       } else {
-        btn.textContent = '🔔 TAP TO RETRY';
+        btn.textContent = original;
       }
     });
   } catch (err) {
     console.error('Notify failed:', err);
-    btn.textContent = '🔔 TAP TO RETRY';
+    btn.textContent = original;
   }
 });
 </script>
