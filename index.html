@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#F4F4F0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>KISSES</title>
@@ -18,21 +18,56 @@
 <script>
   window.OneSignalDeferred = window.OneSignalDeferred || [];
   OneSignalDeferred.push(async function(OneSignal) {
-    await OneSignal.init({
-      appId: "6752ffdc-ebef-4aec-b9c7-ccb73f791cfd",
-      safari_web_id: "web.onesignal.auto.2b30b273-8f48-4327-8bae-bed77c33071b",
-      notifyButton: { enable: false },
-      allowLocalhostAsSecureOrigin: true
-    });
+    // Remove a legacy Firebase Messaging registration before OneSignal claims push.
+    if ('serviceWorker' in navigator) {
+      try {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (const registration of registrations) {
+          const worker = registration.active || registration.waiting || registration.installing;
+          if (worker?.scriptURL?.includes('/firebase-messaging-sw.js')) {
+            await registration.unregister();
+          }
+        }
+      } catch (err) {
+        console.warn('Legacy push worker cleanup failed:', err);
+      }
+    }
 
-    // When a notification is tapped, the Firestore listener below will pick up
-    // the latest kiss (thanks to the first-load grace window). We just log here.
     try {
-      OneSignal.Notifications.addEventListener('click', (event) => {
-        console.log('Notification clicked:', event);
+      await OneSignal.init({
+        appId: "6752ffdc-ebef-4aec-b9c7-ccb73f791cfd",
+        safari_web_id: "web.onesignal.auto.2b30b273-8f48-4327-8bae-bed77c33071b",
+        notifyButton: { enable: false },
+        allowLocalhostAsSecureOrigin: true
+      });
+    } catch (err) {
+      console.warn('OneSignal initialization failed:', err);
+      return;
+    }
+
+    // Forward notification clicks to the app so an already-open tab can display
+    // the exact kiss instead of whichever message happens to be newest.
+    try {
+      OneSignal.Notifications.addEventListener('click', event => {
+        const payload = {
+          data: event?.notification?.additionalData || event?.notification?.data || {},
+          launchUrl: event?.notification?.launchURL || event?.notification?.url || ''
+        };
+        window.__pendingKissNotification = payload;
+        window.dispatchEvent(new CustomEvent('kisses-notification-click', { detail: payload }));
       });
     } catch (e) {
-      console.log('OneSignal click listener failed:', e);
+      console.warn('OneSignal click listener failed:', e);
+    }
+
+    // Keep the custom notification button in sync when browser permission or
+    // the OneSignal subscription changes outside the button click itself.
+    try {
+      const notifyStateChanged = () => window.dispatchEvent(new Event('kisses-notification-state-change'));
+      OneSignal.Notifications.addEventListener('permissionChange', notifyStateChanged);
+      OneSignal.User.PushSubscription.addEventListener('change', notifyStateChanged);
+    } catch (e) {
+      console.warn('OneSignal state listeners failed:', e);
     }
   });
 </script>
@@ -48,15 +83,22 @@
 
   *{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html,body{
-    height:100%; overflow:hidden; overscroll-behavior:none;
+    width:100%; min-height:100%; overflow:hidden; overscroll-behavior:none;
     font-family:var(--mono);
   }
   body{
+    height:100dvh;
     background:var(--paper);
     color:var(--ink);
     padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-    display:flex; align-items:center; justify-content:center;
+    display:flex; align-items:stretch; justify-content:center;
   }
+
+  button,input{ font:inherit; }
+  button:focus-visible,input:focus-visible{ outline:2px solid var(--red); outline-offset:2px; }
+  button{ touch-action:manipulation; }
+  button:disabled,input:disabled{ cursor:not-allowed; opacity:.58; }
+  .controls.is-sending .color-dot,.controls.is-sending #draw-canvas{ pointer-events:none; opacity:.7; }
 
   /* ---- mechanical grain ---- */
   .noise{
@@ -67,13 +109,16 @@
 
   /* ================= SEND VIEW ================= */
   #send-view{
-    display:flex; flex-direction:column; justify-content:center; align-items:center;
-    width:100%; height:100%; padding:6px; overflow-y:auto;
+    display:flex; flex-direction:column; align-items:center;
+    width:100%; height:100%; min-height:0; padding:10px; overflow-y:auto;
+    scrollbar-gutter:stable both-edges;
   }
 
   .controls{
-    display:grid; gap:1px; width:100%; max-width:380px;
+    display:grid; gap:1px; width:100%; max-width:420px;
+    margin:auto;
     background:var(--ink); border:1.5px solid var(--ink);
+    box-shadow:0 8px 28px rgba(17,17,17,.10);
   }
   .controls > *{ background:var(--paper); }
 
@@ -162,6 +207,27 @@
   #custom-color::-webkit-color-swatch-wrapper{ padding:0; }
   #custom-color::-webkit-color-swatch{ border:none; border-radius:0; }
 
+  /* ---- private channel ---- */
+  .channel-row{ display:grid; grid-template-columns:minmax(0,1fr) auto; gap:6px; }
+  #channel-code{
+    min-width:0; width:100%; padding:10px; border:1px solid var(--ink);
+    border-radius:0; background:var(--paper); color:var(--ink);
+    font-family:var(--mono); font-size:12px; font-weight:700;
+    letter-spacing:.18em; text-transform:uppercase;
+  }
+  #channel-set,#channel-share{
+    border:1px solid var(--ink); border-radius:0; background:var(--paper); color:var(--ink);
+    padding:10px 12px; font-family:var(--mono); font-size:9px; font-weight:700;
+    letter-spacing:.12em; text-transform:uppercase; cursor:pointer;
+  }
+  #channel-set:active,#channel-share:active{ background:var(--ink); color:var(--paper); }
+  .channel-tools{ display:flex; align-items:center; gap:8px; margin-top:6px; }
+  #channel-share{ flex:0 0 auto; padding:7px 9px; }
+  #channel-hint{
+    flex:1; font-size:8px; line-height:1.45; letter-spacing:.07em;
+    text-transform:uppercase; color:rgba(17,17,17,.66);
+  }
+
   /* ---- media ---- */
   .photo-row{ display:flex; align-items:center; gap:8px; }
   .media-btn{
@@ -223,8 +289,9 @@
   /* ================= RECEIVE VIEW ================= */
   #receive-view{
     position:relative;
-    display:flex; flex-direction:column; align-items:center; justify-content:center;
-    width:100%; height:100%; padding:52px 18px 40px; gap:18px;
+    display:flex; flex-direction:column; align-items:center; justify-content:safe center;
+    width:100%; height:100%; min-height:0; padding:58px 18px 40px; gap:18px;
+    overflow-y:auto;
     background-color:var(--paper);
     background-image:radial-gradient(rgba(17,17,17,.13) 0.9px, transparent 1px);
     background-size:6px 6px;
@@ -289,7 +356,23 @@
   }
   #back-btn:active{ background:var(--ink); color:var(--paper); }
 
+  #app-toast{
+    position:fixed; left:50%; bottom:calc(14px + env(safe-area-inset-bottom)); z-index:10000;
+    max-width:min(92vw, 420px); padding:10px 12px;
+    border:1.5px solid var(--ink); background:var(--paper); color:var(--ink);
+    font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+    box-shadow:4px 4px 0 var(--ink);
+    transform:translate(-50%, 140%); opacity:0; pointer-events:none;
+    transition:transform .2s ease, opacity .2s ease;
+  }
+  #app-toast.show{ transform:translate(-50%, 0); opacity:1; }
+  #app-toast.error{ border-color:var(--red); box-shadow:4px 4px 0 var(--red); }
+
   .hidden{ display:none !important; }
+
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{ animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; }
+  }
 
   @media (max-width:380px){
     .header h1{ font-size:clamp(1.9rem, 11.5vw, 3rem); }
@@ -303,6 +386,18 @@
     #send-btn{ padding:15px; font-size:18px; }
     #kiss-display{ width:130px; height:130px; }
     #emoji-display{ font-size:120px; }
+    .channel-row{ grid-template-columns:minmax(0,1fr) 62px; }
+    #channel-set{ padding-inline:6px; }
+  }
+
+  @media (max-height:720px){
+    .header h1{ font-size:clamp(1.85rem, 9vw, 2.8rem); margin:3px 0 4px; }
+    .header{ padding:7px; }
+    .card{ padding:7px; }
+    #preview-area{ min-height:78px; padding:7px; }
+    #preview-icon{ width:58px; height:58px; }
+    #preview-emoji{ font-size:44px; }
+    #send-btn{ padding:14px; }
   }
 </style>
 </head>
@@ -316,7 +411,7 @@
     <header class="header">
       <div class="meta-row">
         <span>UNIT / K-01</span>
-        <span>REV 2.6</span>
+        <span>REV 3.0</span>
         <span>&reg;</span>
       </div>
       <h1>SEND<br>LOVE</h1>
@@ -329,11 +424,23 @@
     </header>
 
     <div class="card">
+      <div class="section-label">[ PRIVATE CHANNEL ]</div>
+      <div class="channel-row">
+        <input id="channel-code" type="text" inputmode="text" autocomplete="off" spellcheck="false" maxlength="12" aria-label="Private channel code">
+        <button id="channel-set" type="button">SET</button>
+      </div>
+      <div class="channel-tools">
+        <button id="channel-share" type="button">COPY INVITE</button>
+        <div id="channel-hint">ONLY DEVICES USING THIS CODE RECEIVE YOUR KISSES.</div>
+      </div>
+    </div>
+
+    <div class="card">
       <div class="tabs" id="tabs">
-        <button data-type="kiss" class="active">💋 KISS</button>
-        <button data-type="hug">🤗 HUG</button>
-        <button data-type="papoi">🍌 PAPOI</button>
-        <button data-type="draw">✏️ DRAW</button>
+        <button type="button" data-type="kiss" class="active">💋 KISS</button>
+        <button type="button" data-type="hug">🤗 HUG</button>
+        <button type="button" data-type="papoi">🍌 PAPOI</button>
+        <button type="button" data-type="draw">✏️ DRAW</button>
       </div>
       <div id="preview-area">
         <svg id="preview-icon" viewBox="0 0 24 24"><path id="preview-path" fill="#FF69B4" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
@@ -351,7 +458,7 @@
     <div class="card">
       <div class="section-label">[ MEDIA ]</div>
       <div class="photo-row">
-        <button class="media-btn" onclick="document.getElementById('file-input').click()">+ PHOTO / GIF</button>
+        <button type="button" class="media-btn" onclick="document.getElementById('file-input').click()">+ PHOTO / GIF</button>
         <img id="preview-img" alt="">
       </div>
       <input type="file" id="file-input" accept="image/*">
@@ -360,15 +467,15 @@
     <div class="card">
       <div class="section-label">[ LOCATION ]</div>
       <div class="loc-toggle" id="loc-toggle">
-        <button data-mode="off" class="active">OFF</button>
-        <button data-mode="gps">GPS</button>
-        <button data-mode="text">TYPE</button>
+        <button type="button" data-mode="off" class="active">OFF</button>
+        <button type="button" data-mode="gps">GPS</button>
+        <button type="button" data-mode="text">TYPE</button>
       </div>
-      <input type="text" id="custom-loc" placeholder="TYPE A LOCATION...">
+      <input type="text" id="custom-loc" maxlength="120" placeholder="TYPE A LOCATION...">
     </div>
 
-    <button id="notif-btn">🔔 ENABLE NOTIFICATIONS</button>
-    <button id="send-btn">SEND</button>
+    <button id="notif-btn" type="button">🔔 ENABLE NOTIFICATIONS</button>
+    <button id="send-btn" type="button">SEND</button>
 
   </div>
 </div>
@@ -384,12 +491,14 @@
   <svg id="kiss-display" viewBox="0 0 24 24"><path id="kiss-path" fill="#FF69B4" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
   <div id="emoji-display">🤗</div>
   <div id="location-display"></div>
-  <button id="back-btn">&lt; SEND ANOTHER</button>
+  <button id="back-btn" type="button">&lt; SEND ANOTHER</button>
 </div>
+
+<div id="app-toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getFirestore, collection, doc, setDoc, onSnapshot, query, orderBy, limit }
+import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot, query, orderBy, limit, where, documentId, serverTimestamp }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 const firebaseConfig = {
@@ -405,15 +514,12 @@ const IMGBB_KEY = '9e30919b8718be370e22427d93a9060e';
 const GIPHY_KEY = 'vMggDD6nkMVZAOyf4okMRDnuj3z8Vet9';
 const ONESIGNAL_APP_ID = '6752ffdc-ebef-4aec-b9c7-ccb73f791cfd';
 const MAX_FILE_MB = 15;
-
-// How recent a kiss must be (on first snapshot) to auto-show on app open.
-// This is what makes tapping a notification actually display the kiss.
 const FIRST_LOAD_GRACE_MS = 60000;
+const CHANNEL_STORAGE_KEY = 'kisses_private_channel_v1';
+const DEVICE_STORAGE_KEY = 'kisses_device_id_v1';
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-
-const APP_START_TIME = Date.now();
 
 let selectedType = 'kiss';
 let selectedColor = '#FF69B4';
@@ -422,7 +528,54 @@ let selectedFile = null;
 let previewObjectUrl = null;
 let lastSendTime = 0;
 let lastShownDocId = null;
-let notifInitialized = false;
+let listenerStartedAt = Date.now();
+let unsubscribeSnapshot = null;
+let firstLoad = true;
+let toastTimer = null;
+
+function randomToken(length = 8) {
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const bytes = new Uint8Array(length);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, b => alphabet[b % alphabet.length]).join('');
+}
+
+function normalizeChannel(value) {
+  return String(value || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12);
+}
+
+function getStoredOrCreate(key, factory) {
+  try {
+    const existing = localStorage.getItem(key);
+    if (existing) return existing;
+    const value = factory();
+    localStorage.setItem(key, value);
+    return value;
+  } catch {
+    return factory();
+  }
+}
+
+const params = new URLSearchParams(location.search);
+const inviteCandidate = normalizeChannel(params.get('c'));
+const inviteChannel = inviteCandidate.length >= 4 ? inviteCandidate : '';
+const storedCandidate = normalizeChannel(getStoredOrCreate(CHANNEL_STORAGE_KEY, () => randomToken(6)));
+const storedChannel = storedCandidate.length >= 4 ? storedCandidate : randomToken(6);
+let activeChannel = inviteChannel || storedChannel;
+const deviceId = getStoredOrCreate(DEVICE_STORAGE_KEY, () => randomToken(16));
+const requestedKissId = params.get('kiss') || null;
+
+try { localStorage.setItem(CHANNEL_STORAGE_KEY, activeChannel); } catch {}
+
+// Consume invite channel parameters once. Keeping an old ?c= in the address bar
+// would otherwise override a channel the user sets later when the page reloads.
+if (inviteChannel) {
+  try {
+    const cleanUrl = new URL(location.href);
+    cleanUrl.searchParams.delete('c');
+    history.replaceState({}, '', cleanUrl);
+  } catch {}
+}
 
 const colors = [
   '#FF69B4','#FF0000','#FF1493','#800080','#9400D3',
@@ -436,6 +589,135 @@ function escapeHtml(s) {
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
   }[c]));
 }
+
+function showToast(message, kind = 'info') {
+  const toast = document.getElementById('app-toast');
+  toast.textContent = message;
+  toast.classList.toggle('error', kind === 'error');
+  toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 2600);
+}
+
+function withOneSignal(fn, timeoutMs = 8000) {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      reject(new Error('OneSignal SDK unavailable'));
+    }, timeoutMs);
+
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    window.OneSignalDeferred.push(async OneSignal => {
+      if (settled) return;
+      try {
+        const result = await fn(OneSignal);
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(result);
+      } catch (err) {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        reject(err);
+      }
+    });
+  });
+}
+
+async function syncOneSignalChannel() {
+  try {
+    await withOneSignal(async OneSignal => {
+      await OneSignal.login(deviceId);
+      await OneSignal.User.addTags({
+        kiss_channel: activeChannel,
+        kiss_device: deviceId
+      });
+    });
+  } catch (err) {
+    console.warn('OneSignal tag sync failed:', err);
+  }
+}
+
+function buildInviteUrl(kissId = '', channel = activeChannel) {
+  const url = new URL(location.href);
+  url.search = '';
+  url.searchParams.set('c', channel);
+  if (kissId) url.searchParams.set('kiss', kissId);
+  url.hash = '';
+  return url.toString();
+}
+
+function makeKissDocId(now = Date.now(), channel = activeChannel) {
+  return `${channel}_${String(now).padStart(13, '0')}_${randomToken(6)}`;
+}
+
+function updateChannelUI() {
+  document.getElementById('channel-code').value = activeChannel;
+}
+
+async function applyChannel(value, { quiet = false } = {}) {
+  const normalized = normalizeChannel(value);
+  if (normalized.length < 4) {
+    showToast('Channel code must be at least 4 characters.', 'error');
+    updateChannelUI();
+    return false;
+  }
+  if (normalized === activeChannel) {
+    if (!quiet) showToast(`Channel ${activeChannel} is active.`);
+    return true;
+  }
+
+  activeChannel = normalized;
+  try { localStorage.setItem(CHANNEL_STORAGE_KEY, activeChannel); } catch {}
+  lastShownDocId = null;
+  firstLoad = true;
+  listenerStartedAt = Date.now();
+  updateChannelUI();
+  startListener();
+  await syncOneSignalChannel();
+  if (!quiet) showToast(`Joined private channel ${activeChannel}.`);
+  return true;
+}
+
+updateChannelUI();
+
+document.getElementById('channel-set').addEventListener('click', () => {
+  applyChannel(document.getElementById('channel-code').value);
+});
+document.getElementById('channel-code').addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    document.getElementById('channel-set').click();
+  }
+});
+document.getElementById('channel-code').addEventListener('input', e => {
+  const clean = normalizeChannel(e.target.value);
+  if (e.target.value !== clean) e.target.value = clean;
+});
+document.getElementById('channel-share').addEventListener('click', async () => {
+  const inviteUrl = buildInviteUrl();
+  try {
+    await navigator.clipboard.writeText(inviteUrl);
+    showToast('Invite link copied.');
+  } catch {
+    try {
+      const input = document.createElement('textarea');
+      input.value = inviteUrl;
+      input.style.position = 'fixed';
+      input.style.opacity = '0';
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand('copy');
+      input.remove();
+      showToast('Invite link copied.');
+    } catch {
+      showToast(`Share channel code: ${activeChannel}`);
+    }
+  }
+});
 
 // === Canvas ===
 const canvas = document.getElementById('draw-canvas');
@@ -582,8 +864,14 @@ fileInput.addEventListener('change', e => {
     return;
   }
 
+  if (!file.type.startsWith('image/')) {
+    showToast('Please choose an image or GIF.', 'error');
+    clearSelectedFile();
+    return;
+  }
+
   if (file.size > MAX_FILE_MB * 1024 * 1024) {
-    alert(`Photo too big (max ${MAX_FILE_MB}MB). Choose a smaller one.`);
+    showToast(`Photo too big — max ${MAX_FILE_MB}MB.`, 'error');
     clearSelectedFile();
     return;
   }
@@ -632,7 +920,7 @@ async function fetchRandomMinionGif() {
   } catch { return null; }
 }
 
-async function sendOneSignalNotification(type) {
+async function sendOneSignalNotification(type, kissId, channel = activeChannel) {
   let body = 'A kiss for you 💋';
   if (type === 'hug') body = 'A hug for you 🤗';
   else if (type === 'papoi') body = 'Papoi! 🍌';
@@ -644,80 +932,116 @@ async function sendOneSignalNotification(type) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         app_id: ONESIGNAL_APP_ID,
-        // Correct segment for this OneSignal project:
-        included_segments: ['Total Subscriptions'],
+        target_channel: 'push',
+        // Scope pushes to this private channel and explicitly exclude the sender.
+        filters: [
+          { field: 'tag', key: 'kiss_channel', relation: '=', value: channel },
+          { field: 'tag', key: 'kiss_device', relation: '!=', value: deviceId }
+        ],
         headings: { en: 'Kisses 💋' },
         contents: { en: body },
-        chrome_web_icon: 'https://whimsical-stardust-19fb53.netlify.app/icon.png'
+        data: { channel, kissId, senderDeviceId: deviceId },
+        url: buildInviteUrl(kissId, channel),
+        chrome_web_icon: new URL('/icon.png', location.href).href
       })
     }, 12000);
 
     if (!res.ok) {
-      console.log('OneSignal proxy HTTP error:', res.status);
-      return;
+      console.warn('OneSignal proxy HTTP error:', res.status);
+      return false;
     }
-    const result = await res.json();
+    const result = await res.json().catch(() => ({}));
     console.log('OneSignal proxy result:', result);
+    return true;
   } catch (err) {
-    console.log('OneSignal proxy failed:', err);
+    console.warn('OneSignal proxy failed:', err);
+    return false;
   }
 }
 
 // === Send ===
+const controlsEl = document.querySelector('.controls');
+function setComposerBusy(busy) {
+  controlsEl.classList.toggle('is-sending', busy);
+  controlsEl.setAttribute('aria-busy', busy ? 'true' : 'false');
+  controlsEl.querySelectorAll('button, input').forEach(el => { el.disabled = busy; });
+}
+
 document.getElementById('send-btn').addEventListener('click', async () => {
   const now = Date.now();
   if (now - lastSendTime < 1000) return;
   lastSendTime = now;
 
   const sendBtn = document.getElementById('send-btn');
-  sendBtn.disabled = true;
+  const sendType = selectedType;
+  const sendColor = selectedColor;
+  const sendChannel = activeChannel;
+  const sendLocMode = locMode;
+  const sendLocationText = document.getElementById('custom-loc').value.trim();
+  const sendFile = selectedFile;
+  const sendDrawing = sendType === 'draw' && !isCanvasEmpty()
+    ? canvas.toDataURL('image/png').split(',')[1]
+    : null;
+
+  setComposerBusy(true);
   sendBtn.textContent = 'SENDING';
 
   try {
     let location = null;
-    if (locMode === 'gps') {
+    if (sendLocMode === 'gps') {
       try {
         const pos = await new Promise((res, rej) =>
           navigator.geolocation.getCurrentPosition(res, rej, { timeout: 5000 })
         );
         location = { type: 'gps', lat: pos.coords.latitude, lon: pos.coords.longitude };
-      } catch {}
-    } else if (locMode === 'text') {
-      const text = document.getElementById('custom-loc').value.trim();
-      if (text) location = { type: 'text', label: text };
+      } catch (err) {
+        console.warn('Location unavailable:', err);
+        showToast('Location unavailable — sending without it.');
+      }
+    } else if (sendLocMode === 'text') {
+      if (sendLocationText) location = { type: 'text', label: sendLocationText };
     }
 
     // Priority: the selected tab wins over a leftover photo.
     // (Previously a stale photo could hijack PAPOI / DRAW.)
     let mediaUrl = null;
-    if (selectedType === 'papoi') {
+    if (sendType === 'papoi') {
       mediaUrl = await fetchRandomMinionGif();
-    } else if (selectedType === 'draw') {
-      if (!isCanvasEmpty()) {
-        const base64 = canvas.toDataURL('image/png').split(',')[1];
+    } else if (sendType === 'draw') {
+      if (sendDrawing) {
         const fd = new FormData();
-        fd.append('image', base64);
+        fd.append('image', sendDrawing);
         mediaUrl = await uploadToImgBB(fd);
+        if (!mediaUrl) throw new Error('MEDIA_UPLOAD_FAILED');
       }
-    } else if (selectedFile) {
+    } else if (sendFile) {
       const fd = new FormData();
-      fd.append('image', selectedFile);
+      fd.append('image', sendFile);
       mediaUrl = await uploadToImgBB(fd);
+      if (!mediaUrl) throw new Error('MEDIA_UPLOAD_FAILED');
     }
 
     const kissData = {
-      type: selectedType,
-      color: selectedColor,
+      type: sendType,
+      color: sendColor,
       location,
       mediaUrl,
-      time: now
+      channel: sendChannel,
+      senderDeviceId: deviceId,
+      time: now,
+      createdAt: serverTimestamp()
     };
 
-    const docRef = doc(collection(db, 'kisses'));
+    const kissId = makeKissDocId(now, sendChannel);
+    const docRef = doc(db, 'kisses', kissId);
+    // Set before the write so the local Firestore listener never double-renders our own send.
+    lastShownDocId = kissId;
     await setDoc(docRef, kissData);
-    lastShownDocId = docRef.id;
 
-    sendOneSignalNotification(selectedType);
+    // Sending the push should not block the UI; Firestore is the source of truth.
+    sendOneSignalNotification(sendType, kissId, sendChannel).then(ok => {
+      if (!ok) showToast('Sent, but the push notification failed.', 'error');
+    });
 
     clearSelectedFile();
     document.getElementById('custom-loc').value = '';
@@ -726,9 +1050,13 @@ document.getElementById('send-btn').addEventListener('click', async () => {
     showReceive(kissData);
   } catch (err) {
     console.error('Send failed:', err);
-    alert('Send failed. Check internet.');
+    if (err?.message === 'MEDIA_UPLOAD_FAILED') {
+      showToast('Media upload failed — nothing was sent.', 'error');
+    } else {
+      showToast('Send failed — check your connection.', 'error');
+    }
   } finally {
-    sendBtn.disabled = false;
+    setComposerBusy(false);
     sendBtn.textContent = 'SEND';
   }
 });
@@ -778,15 +1106,11 @@ function showReceive(k) {
   let html = '';
   const loc = k.location;
   if (loc && typeof loc === 'object') {
-    if (loc.type === 'gps' && Number.isFinite(loc.lat) && Number.isFinite(loc.lon)) {
+    if (loc.type === 'gps' && Number.isFinite(loc.lat) && Number.isFinite(loc.lon) && Math.abs(loc.lat) <= 90 && Math.abs(loc.lon) <= 180) {
       html += `<a href="https://maps.google.com/?q=${loc.lat},${loc.lon}" target="_blank" rel="noopener">📍 ${loc.lat.toFixed(3)}, ${loc.lon.toFixed(3)}</a>`;
     } else if (loc.type === 'text' && loc.label) {
       html += `📍 ${escapeHtml(loc.label)}`;
     }
-  }
-
-  if (k.mediaUrl) {
-    html += `<img src="${escapeHtml(k.mediaUrl)}" alt="">`;
   }
 
   const fallbackText =
@@ -794,17 +1118,31 @@ function showReceive(k) {
     type === 'papoi' ? '🍌 PAPOI!' :
     type === 'draw'  ? '✏️ A DRAWING' : '💕';
 
-  locDisplay.innerHTML = html || fallbackText;
+  locDisplay.innerHTML = html || (!k.mediaUrl ? fallbackText : '');
 
-  // Broken-media handling: remove the dead image and show the fallback graphic
-  // instead of leaving an empty screen.
-  const img = locDisplay.querySelector('img');
-  if (img) {
-    img.addEventListener('error', () => {
-      img.remove();
+  if (k.mediaUrl) {
+    let media;
+    try {
+      const mediaUrl = new URL(k.mediaUrl, location.href);
+      if (mediaUrl.protocol !== 'https:') throw new Error('Unsupported media protocol');
+      media = document.createElement('img');
+      media.src = mediaUrl.href;
+      media.alt = type === 'draw' ? 'Received drawing' : 'Received image';
+      media.loading = 'eager';
+      locDisplay.appendChild(media);
+    } catch (err) {
+      console.warn('Invalid media URL:', err);
       showFallbackGraphic();
       if (!locDisplay.textContent.trim()) locDisplay.textContent = '⚠️ MEDIA UNAVAILABLE';
-    });
+    }
+
+    if (media) {
+      media.addEventListener('error', () => {
+        media.remove();
+        showFallbackGraphic();
+        if (!locDisplay.textContent.trim()) locDisplay.textContent = '⚠️ MEDIA UNAVAILABLE';
+      });
+    }
   }
 }
 
@@ -814,27 +1152,44 @@ document.getElementById('back-btn').addEventListener('click', () => {
 });
 
 // === Firestore listener ===
-let firstLoad = true;
-let unsubscribeSnapshot = null;
+function startListener({ useGrace = true } = {}) {
+  if (unsubscribeSnapshot) {
+    try { unsubscribeSnapshot(); } catch {}
+    unsubscribeSnapshot = null;
+  }
 
-function startListener() {
-  const q = query(collection(db, 'kisses'), orderBy('time', 'desc'), limit(1));
+  const lower = `${activeChannel}_`;
+  const upper = `${activeChannel}_\uf8ff`;
+  const q = query(
+    collection(db, 'kisses'),
+    where(documentId(), '>=', lower),
+    where(documentId(), '<=', upper),
+    orderBy(documentId(), 'desc'),
+    limit(1)
+  );
+
+  const thisChannel = activeChannel;
+  listenerStartedAt = Date.now();
+  firstLoad = useGrace;
 
   unsubscribeSnapshot = onSnapshot(q,
     snap => {
+      if (thisChannel !== activeChannel) return;
       const wasFirstLoad = firstLoad;
 
       snap.forEach(d => {
         if (d.id === lastShownDocId) return;
 
         const data = d.data();
+        if (data.channel !== activeChannel) return;
+        if (data.senderDeviceId === deviceId) {
+          lastShownDocId = d.id;
+          return;
+        }
 
-        // On the very first snapshot, only auto-show kisses that are recent.
-        // This prevents showing an old kiss on app open, but DOES show the kiss
-        // when the user opens the app by tapping its notification.
         if (wasFirstLoad) {
           const t = typeof data.time === 'number' ? data.time : 0;
-          if (APP_START_TIME - t > FIRST_LOAD_GRACE_MS) return;
+          if (!t || listenerStartedAt - t > FIRST_LOAD_GRACE_MS) return;
         }
 
         lastShownDocId = d.id;
@@ -844,37 +1199,139 @@ function startListener() {
       firstLoad = false;
     },
     err => {
-      console.error('Snapshot error, retrying in 3s:', err);
+      console.error('Snapshot error:', err);
+      if (thisChannel !== activeChannel) return;
       if (unsubscribeSnapshot) { try { unsubscribeSnapshot(); } catch {} }
-      firstLoad = false; // don't re-apply the grace window on reconnect
-      setTimeout(startListener, 3000);
+      unsubscribeSnapshot = null;
+      firstLoad = false;
+      setTimeout(() => {
+        if (thisChannel === activeChannel) startListener({ useGrace: false });
+      }, 3000);
     }
   );
 }
+
+async function openKissById(kissId, expectedChannel = activeChannel) {
+  if (!kissId) return false;
+  try {
+    const normalizedChannel = normalizeChannel(expectedChannel);
+    if (normalizedChannel && !String(kissId).startsWith(`${normalizedChannel}_`)) return false;
+    if (normalizedChannel && normalizedChannel !== activeChannel) {
+      await applyChannel(normalizedChannel, { quiet: true });
+    }
+
+    const ref = doc(db, 'kisses', kissId);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return false;
+    const data = snap.data();
+    if (data.channel !== activeChannel) return false;
+    lastShownDocId = snap.id;
+    showReceive(data);
+    return true;
+  } catch (err) {
+    console.warn('Could not open notification item:', err);
+    return false;
+  }
+}
+
+async function openRequestedKiss() {
+  if (!requestedKissId) return;
+  const opened = await openKissById(requestedKissId, activeChannel);
+  if (opened) {
+    const cleanUrl = new URL(location.href);
+    cleanUrl.searchParams.delete('kiss');
+    history.replaceState({}, '', cleanUrl);
+  }
+}
+
+async function handleNotificationClick(payload) {
+  const data = payload?.data || {};
+  let kissId = data.kissId || '';
+  let channel = normalizeChannel(data.channel);
+
+  if ((!kissId || !channel) && payload?.launchUrl) {
+    try {
+      const url = new URL(payload.launchUrl, location.href);
+      kissId ||= url.searchParams.get('kiss') || '';
+      channel ||= normalizeChannel(url.searchParams.get('c'));
+    } catch {}
+  }
+
+  if (kissId) await openKissById(kissId, channel || activeChannel);
+}
+
+window.addEventListener('kisses-notification-click', event => {
+  handleNotificationClick(event.detail);
+});
+if (window.__pendingKissNotification) {
+  const pending = window.__pendingKissNotification;
+  window.__pendingKissNotification = null;
+  handleNotificationClick(pending);
+}
+
 startListener();
+syncOneSignalChannel();
+openRequestedKiss();
 
 // === OneSignal permission button ===
-document.getElementById('notif-btn').addEventListener('click', async () => {
-  if (notifInitialized) return;
+function setNotificationButtonState(permission, optedIn = false) {
   const btn = document.getElementById('notif-btn');
-  const original = btn.textContent;
+  const active = Boolean(permission && optedIn);
+  btn.classList.toggle('on', active);
+  btn.textContent = active ? '🔔 NOTIFICATIONS ON' : '🔔 ENABLE NOTIFICATIONS';
+}
+
+async function refreshNotificationState() {
+  try {
+    await withOneSignal(async OneSignal => {
+      await OneSignal.login(deviceId);
+      const permission = Boolean(OneSignal.Notifications.permission);
+      const optedIn = Boolean(OneSignal.User?.PushSubscription?.optedIn);
+      setNotificationButtonState(permission, optedIn);
+      await OneSignal.User.addTags({ kiss_channel: activeChannel, kiss_device: deviceId });
+    });
+  } catch (err) {
+    console.warn('Notification state unavailable:', err);
+  }
+}
+
+document.getElementById('notif-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('notif-btn');
+  if (btn.dataset.busy === '1') return;
+  btn.dataset.busy = '1';
   btn.textContent = '🔔 WORKING...';
 
   try {
-    await window.OneSignalDeferred.push(async function(OneSignal) {
-      const granted = await OneSignal.Notifications.requestPermission();
-      if (granted) {
-        btn.textContent = '🔔 NOTIFICATIONS ON';
-        btn.classList.add('on');
-        notifInitialized = true;
-      } else {
-        btn.textContent = original;
+    await withOneSignal(async OneSignal => {
+      await OneSignal.login(deviceId);
+      if (!OneSignal.Notifications.permission) {
+        await OneSignal.Notifications.requestPermission();
       }
+      if (OneSignal.Notifications.permission && !OneSignal.User.PushSubscription.optedIn) {
+        await OneSignal.User.PushSubscription.optIn();
+      }
+      await OneSignal.User.addTags({ kiss_channel: activeChannel, kiss_device: deviceId });
+
+      const permission = Boolean(OneSignal.Notifications.permission);
+      const optedIn = Boolean(OneSignal.User.PushSubscription.optedIn);
+      setNotificationButtonState(permission, optedIn);
+      showToast(permission && optedIn ? 'Notifications enabled for this channel.' : 'Notifications are blocked in browser settings.');
     });
   } catch (err) {
     console.error('Notify failed:', err);
-    btn.textContent = original;
+    setNotificationButtonState(false, false);
+    showToast('Could not enable notifications.', 'error');
+  } finally {
+    btn.dataset.busy = '0';
   }
+});
+
+refreshNotificationState();
+window.addEventListener('pageshow', refreshNotificationState);
+window.addEventListener('kisses-notification-state-change', refreshNotificationState);
+window.addEventListener('beforeunload', () => {
+  if (previewObjectUrl) URL.revokeObjectURL(previewObjectUrl);
+  if (unsubscribeSnapshot) { try { unsubscribeSnapshot(); } catch {} }
 });
 </script>
 
