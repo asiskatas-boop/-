@@ -3,15 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#F4F4F0">
+<meta name="theme-color" content="#FFFBF5">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>KISSES</title>
-<link rel="manifest" href="/manifest.json">
-<link rel="apple-touch-icon" href="/icon.png">
+<title>Kisses</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon.png">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
 <!-- OneSignal -->
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
@@ -399,6 +400,490 @@
     #preview-emoji{ font-size:44px; }
     #send-btn{ padding:14px; }
   }
+
+  /* ================= MARKETNEST THEME OVERRIDES =================
+     Warm, community-driven, handmade visual system.
+     Functional IDs/classes are intentionally unchanged.
+  */
+  :root{
+    --primary:#C2410C;
+    --primary-hover:#9A3412;
+    --primary-active:#7C2D12;
+    --secondary:#D4A373;
+    --tertiary:#365314;
+    --background:#FFFBF5;
+    --surface:#FFFFFF;
+    --ink:#1C1917;
+    --muted:#57534E;
+    --subtle:#A8A29E;
+    --border:#E7E5E4;
+    --border-strong:#D6D3D1;
+    --success:#22C55E;
+    --warning:#F59E0B;
+    --error:#DC2626;
+    --info:#3B82F6;
+    --paper:var(--background);
+    --red:var(--primary);
+    --mono:'Nunito', system-ui, sans-serif;
+    --macro:'Fraunces', Georgia, serif;
+    --body:'Nunito', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  html,body{ font-family:var(--body); }
+  body{
+    background:var(--background);
+    color:var(--ink);
+  }
+
+  button,input{ font-family:var(--body); }
+  button:focus-visible,input:focus-visible{
+    outline:3px solid rgba(194,65,12,.20);
+    outline-offset:2px;
+  }
+  button:disabled,input:disabled{ opacity:.40; }
+
+  .noise{
+    opacity:.035;
+    mix-blend-mode:multiply;
+  }
+
+  #send-view{
+    padding:24px 16px;
+    background:
+      radial-gradient(circle at 15% 10%, rgba(212,163,115,.10), transparent 28%),
+      radial-gradient(circle at 90% 85%, rgba(54,83,20,.06), transparent 24%),
+      var(--background);
+  }
+
+  .controls{
+    display:grid;
+    gap:12px;
+    width:100%;
+    max-width:520px;
+    margin:auto;
+    padding:0;
+    background:transparent;
+    border:none;
+    box-shadow:none;
+  }
+  .controls > *{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:8px;
+  }
+
+  /* Header — soft, playful, handmade */
+  .header{
+    position:relative;
+    overflow:hidden;
+    padding:24px 24px 22px;
+    background:#FFF8EF !important;
+    border:1px solid var(--border-strong) !important;
+    border-radius:24px !important;
+  }
+  .header::before,
+  .header::after{
+    position:absolute;
+    font-family:var(--macro);
+    color:rgba(194,65,12,.12);
+    pointer-events:none;
+  }
+  .header::before{
+    content:'♡';
+    top:10px;
+    right:18px;
+    font-size:42px;
+    transform:rotate(9deg);
+  }
+  .header::after{
+    content:'✦';
+    right:62px;
+    bottom:14px;
+    font-size:18px;
+    color:rgba(54,83,20,.18);
+  }
+  .header-kicker{
+    display:inline-flex;
+    align-items:center;
+    gap:7px;
+    padding:6px 10px;
+    border:1px solid rgba(194,65,12,.24);
+    border-radius:9999px;
+    background:#FFFDF9;
+    color:var(--primary);
+    font-size:12px;
+    font-weight:800;
+    letter-spacing:.02em;
+  }
+  .header-kicker .heart{
+    font-size:14px;
+    line-height:1;
+  }
+  .header h1{
+    max-width:430px;
+    font-family:var(--macro);
+    font-size:clamp(2.65rem, 10vw, 4.35rem);
+    font-weight:600;
+    line-height:.98;
+    letter-spacing:-.025em;
+    text-transform:none;
+    color:var(--ink);
+    margin:14px 0 10px;
+  }
+  .header h1 .love-word{
+    color:var(--primary);
+    font-weight:700;
+  }
+  .header-subtitle{
+    max-width:390px;
+    color:var(--muted);
+    font-family:var(--body);
+    font-size:14px;
+    font-weight:500;
+    line-height:1.55;
+  }
+  .header-flourish{
+    display:flex;
+    align-items:center;
+    gap:9px;
+    margin-top:17px;
+    color:var(--secondary);
+    font-family:var(--macro);
+    font-size:14px;
+  }
+  .header-flourish::before,
+  .header-flourish::after{
+    content:'';
+    height:1px;
+    flex:1;
+    background:linear-gradient(90deg, transparent, rgba(212,163,115,.75));
+  }
+  .header-flourish::after{
+    background:linear-gradient(90deg, rgba(212,163,115,.75), transparent);
+  }
+  .meta-row,.stripes,.barcode{ display:none; }
+
+  /* Cards + labels */
+  .card{
+    padding:20px;
+    border:1px solid var(--border) !important;
+    border-radius:8px !important;
+    background:var(--surface) !important;
+  }
+  .card:hover{ border-color:var(--border-strong) !important; }
+  .section-label{
+    font-family:var(--body);
+    font-size:11px;
+    font-weight:700;
+    line-height:1.2;
+    letter-spacing:.01em;
+    text-transform:none;
+    color:var(--tertiary);
+    border-bottom:1px solid var(--border);
+    padding-bottom:8px;
+    margin-bottom:14px;
+  }
+
+  /* Tabs / segmented chips */
+  .tabs{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:6px;
+    background:transparent;
+    border:none;
+  }
+  .tabs button{
+    min-height:40px;
+    padding:8px 6px;
+    border:1px solid var(--border-strong);
+    border-radius:4px;
+    background:var(--surface);
+    color:var(--muted);
+    font-family:var(--body);
+    font-size:12px;
+    font-weight:600;
+    letter-spacing:0;
+    text-transform:none;
+    transition:background .15s ease,border-color .15s ease,color .15s ease;
+  }
+  .tabs button:hover{ background:#FDF6EC; border-color:var(--secondary); }
+  .tabs button.active{
+    background:var(--primary);
+    border-color:var(--primary);
+    color:#fff;
+  }
+
+  /* Preview */
+  #preview-area{
+    min-height:132px;
+    padding:20px;
+    margin-top:14px;
+    border:1px solid var(--border-strong);
+    border-radius:8px;
+    background-color:var(--background);
+    background-image:
+      linear-gradient(rgba(212,163,115,.18) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(212,163,115,.18) 1px, transparent 1px);
+    background-size:16px 16px;
+  }
+  #preview-icon{ width:82px; height:82px; }
+  #draw-canvas{
+    border:1.5px solid var(--border-strong);
+    border-radius:8px;
+    background:#fff;
+  }
+
+  /* Color */
+  .color-row{ gap:6px; }
+  .color-dot{
+    border:1px solid var(--border-strong);
+    border-radius:4px;
+  }
+  .color-dot.selected{
+    outline:3px solid rgba(194,65,12,.20);
+    outline-offset:2px;
+    border-color:var(--primary);
+  }
+  #custom-color{
+    height:42px;
+    margin-top:12px;
+    border:1.5px solid var(--border-strong);
+    border-radius:4px;
+    background:var(--surface);
+  }
+
+  /* Inputs */
+  #channel-code,
+  #custom-loc{
+    height:42px;
+    padding:0 14px;
+    border:1.5px solid var(--border-strong);
+    border-radius:4px;
+    background:var(--surface);
+    color:var(--ink);
+    font-family:var(--body);
+    font-size:15px;
+    font-weight:600;
+    letter-spacing:.08em;
+  }
+  #channel-code:focus,
+  #custom-loc:focus{
+    outline:none;
+    border-color:var(--primary);
+    box-shadow:0 0 0 3px rgba(194,65,12,.15);
+  }
+  #custom-loc::placeholder{ color:var(--subtle); }
+
+  .channel-row{ gap:8px; }
+  .channel-tools{ gap:10px; margin-top:10px; }
+  #channel-hint{
+    font-family:var(--body);
+    font-size:11px;
+    line-height:1.5;
+    letter-spacing:0;
+    text-transform:none;
+    color:var(--muted);
+  }
+
+  /* Buttons */
+  #channel-set,
+  #channel-share,
+  #back-btn{
+    border:1.5px solid var(--primary);
+    border-radius:4px;
+    background:transparent;
+    color:var(--primary);
+    font-family:var(--body);
+    font-size:12px;
+    font-weight:600;
+    letter-spacing:0;
+    text-transform:none;
+    cursor:pointer;
+  }
+  #channel-set{ padding:0 18px; }
+  #channel-share{ padding:8px 12px; }
+  #channel-set:hover,
+  #channel-share:hover,
+  #back-btn:hover{ background:#FDF6EC; }
+  #channel-set:active,
+  #channel-share:active,
+  #back-btn:active{
+    background:var(--primary);
+    color:#fff;
+  }
+
+  .media-btn{
+    padding:12px 16px;
+    border:1.5px dashed var(--secondary);
+    border-radius:8px;
+    background:var(--background);
+    color:var(--primary);
+    font-family:var(--body);
+    font-size:13px;
+    font-weight:600;
+    letter-spacing:0;
+    text-transform:none;
+  }
+  .media-btn:hover{ background:#FDF6EC; border-color:var(--primary); }
+  #preview-img{
+    width:52px;
+    height:52px;
+    border:1px solid var(--border-strong);
+    border-radius:8px;
+  }
+
+  /* Location */
+  .loc-toggle{
+    gap:6px;
+    background:transparent;
+    border:none;
+  }
+  .loc-toggle button{
+    min-height:36px;
+    padding:7px 10px;
+    border:1px solid var(--border-strong);
+    border-radius:4px;
+    background:var(--surface);
+    color:var(--muted);
+    font-family:var(--body);
+    font-size:12px;
+    font-weight:600;
+    letter-spacing:0;
+  }
+  .loc-toggle button:hover{ background:#FDF6EC; }
+  .loc-toggle button.active{
+    background:var(--tertiary);
+    border-color:var(--tertiary);
+    color:#fff;
+  }
+
+  /* Notification / send CTA */
+  #notif-btn{
+    min-height:42px;
+    border:1.5px solid var(--tertiary);
+    border-radius:4px;
+    background:transparent;
+    color:var(--tertiary);
+    font-family:var(--body);
+    font-size:13px;
+    font-weight:600;
+    letter-spacing:0;
+    text-transform:none;
+    padding:11px 16px;
+  }
+  #notif-btn:hover{ background:#F3F6ED; }
+  #notif-btn.on{ background:var(--tertiary); color:#fff; }
+
+  #send-btn{
+    min-height:50px;
+    border:none;
+    border-radius:4px;
+    background:var(--primary);
+    color:#fff;
+    font-family:var(--body);
+    font-size:16px;
+    font-weight:700;
+    letter-spacing:0;
+    text-transform:none;
+    padding:14px 32px;
+  }
+  #send-btn:hover{ background:var(--primary-hover); }
+  #send-btn:active{ background:var(--primary-active); }
+  #send-btn:disabled{ background:var(--primary); opacity:.40; }
+
+  /* Receive view */
+  #receive-view{
+    padding:76px 18px 44px;
+    gap:20px;
+    background-color:var(--background);
+    background-image:
+      radial-gradient(rgba(212,163,115,.22) .8px, transparent .9px);
+    background-size:10px 10px;
+  }
+  .rx-bar{
+    padding:14px 18px;
+    font-family:var(--body);
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:.01em;
+    text-transform:none;
+    color:var(--tertiary);
+    border-bottom:2px solid var(--secondary);
+    background:rgba(255,251,245,.96);
+    backdrop-filter:blur(8px);
+  }
+  .frame span{ color:var(--secondary); }
+  #location-display{
+    max-width:min(88vw,420px);
+    padding:16px;
+    border:1px solid var(--border-strong);
+    border-radius:8px;
+    background:var(--surface);
+    color:var(--ink);
+    font-family:var(--body);
+    font-size:14px;
+    letter-spacing:0;
+    text-transform:none;
+    line-height:1.6;
+  }
+  #location-display a{
+    color:var(--primary);
+    border-bottom:1px solid var(--primary);
+  }
+  #location-display img{
+    border:1px solid var(--border-strong);
+    border-radius:8px;
+  }
+  #back-btn{
+    padding:12px 22px;
+    background:var(--surface);
+  }
+
+  /* Toast — overlay exception */
+  #app-toast{
+    padding:11px 14px;
+    border:1px solid var(--border-strong);
+    border-radius:4px;
+    background:var(--surface);
+    color:var(--ink);
+    font-family:var(--body);
+    font-size:12px;
+    font-weight:600;
+    letter-spacing:0;
+    text-transform:none;
+    box-shadow:0 8px 24px rgba(28,25,23,.10);
+  }
+  #app-toast.error{
+    border-color:var(--error);
+    box-shadow:0 8px 24px rgba(220,38,38,.10);
+  }
+
+  @media (max-width:380px){
+    #send-view{ padding:14px 10px; }
+    .controls{ gap:9px; }
+    .header{ padding:20px 18px 18px; }
+    .card{ padding:15px; }
+    .header h1{ font-size:clamp(2.35rem, 12vw, 3.55rem); margin-top:12px; }
+    .header-subtitle{ font-size:13px; }
+    .header::before{ font-size:34px; right:14px; }
+    .tabs{ gap:4px; }
+    .tabs button{ font-size:11px; }
+    #preview-area{ min-height:108px; padding:14px; }
+    #send-btn{ font-size:15px; }
+  }
+
+  @media (max-height:720px){
+    #send-view{ padding-block:12px; }
+    .controls{ gap:8px; }
+    .header{ padding:17px 18px 15px; }
+    .header h1{ font-size:clamp(2.05rem, 8vw, 3rem); margin:9px 0 7px; }
+    .header-subtitle{ font-size:12.5px; }
+    .header-flourish{ margin-top:11px; }
+    .card{ padding:14px; }
+    #preview-area{ min-height:92px; padding:10px; }
+    #send-btn{ min-height:46px; padding:12px 24px; }
+  }
+
 </style>
 </head>
 <body>
@@ -409,29 +894,21 @@
   <div class="controls">
 
     <header class="header">
-      <div class="meta-row">
-        <span>UNIT / K-01</span>
-        <span>REV 3.0</span>
-        <span>&reg;</span>
-      </div>
-      <h1>SEND<br>LOVE</h1>
-      <div class="stripes"></div>
-      <div class="meta-row">
-        <span>[ AFFECTION TRANSFER ]</span>
-        <span>2026 &copy;</span>
-      </div>
-      <div class="barcode" aria-hidden="true"></div>
+      <div class="header-kicker"><span class="heart" aria-hidden="true">♥</span> Kisses</div>
+      <h1>Send a little<br><span class="love-word">love</span></h1>
+      <p class="header-subtitle">Pick something sweet and send it to your person.</p>
+      <div class="header-flourish" aria-hidden="true">♡</div>
     </header>
 
     <div class="card">
-      <div class="section-label">[ PRIVATE CHANNEL ]</div>
+      <div class="section-label">Your private channel</div>
       <div class="channel-row">
         <input id="channel-code" type="text" inputmode="text" autocomplete="off" spellcheck="false" maxlength="12" aria-label="Private channel code">
-        <button id="channel-set" type="button">SET</button>
+        <button id="channel-set" type="button">Use code</button>
       </div>
       <div class="channel-tools">
-        <button id="channel-share" type="button">COPY INVITE</button>
-        <div id="channel-hint">ONLY DEVICES USING THIS CODE RECEIVE YOUR KISSES.</div>
+        <button id="channel-share" type="button">Copy invite</button>
+        <div id="channel-hint">Only people with this code can receive your kisses.</div>
       </div>
     </div>
 
@@ -443,55 +920,55 @@
         <button type="button" data-type="draw">✏️ DRAW</button>
       </div>
       <div id="preview-area">
-        <svg id="preview-icon" viewBox="0 0 24 24"><path id="preview-path" fill="#FF69B4" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+        <svg id="preview-icon" viewBox="0 0 24 24"><path id="preview-path" fill="#C2410C" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
         <div id="preview-emoji" style="display:none">🤗</div>
         <canvas id="draw-canvas"></canvas>
       </div>
     </div>
 
     <div class="card">
-      <div class="section-label">[ COLOR ]</div>
+      <div class="section-label">Pick a color</div>
       <div class="color-row" id="color-row"></div>
-      <input type="color" id="custom-color" value="#FF69B4">
+      <input type="color" id="custom-color" value="#C2410C">
     </div>
 
     <div class="card">
-      <div class="section-label">[ MEDIA ]</div>
+      <div class="section-label">Add a photo</div>
       <div class="photo-row">
-        <button type="button" class="media-btn" onclick="document.getElementById('file-input').click()">+ PHOTO / GIF</button>
+        <button type="button" class="media-btn" onclick="document.getElementById('file-input').click()">Add photo / GIF</button>
         <img id="preview-img" alt="">
       </div>
       <input type="file" id="file-input" accept="image/*">
     </div>
 
     <div class="card">
-      <div class="section-label">[ LOCATION ]</div>
+      <div class="section-label">Share a place</div>
       <div class="loc-toggle" id="loc-toggle">
-        <button type="button" data-mode="off" class="active">OFF</button>
-        <button type="button" data-mode="gps">GPS</button>
-        <button type="button" data-mode="text">TYPE</button>
+        <button type="button" data-mode="off" class="active">No location</button>
+        <button type="button" data-mode="gps">Use GPS</button>
+        <button type="button" data-mode="text">Type it</button>
       </div>
-      <input type="text" id="custom-loc" maxlength="120" placeholder="TYPE A LOCATION...">
+      <input type="text" id="custom-loc" maxlength="120" placeholder="Type a location…">
     </div>
 
-    <button id="notif-btn" type="button">🔔 ENABLE NOTIFICATIONS</button>
-    <button id="send-btn" type="button">SEND</button>
+    <button id="notif-btn" type="button">🔔 Enable notifications</button>
+    <button id="send-btn" type="button">Send with love ♥</button>
 
   </div>
 </div>
 
 <div id="receive-view" class="hidden">
   <div class="rx-bar">
-    <span id="rx-label">[ INCOMING ]</span>
-    <span>RX / 001</span>
+    <span id="rx-label">Something sweet arrived ♡</span>
+    <span>Kisses</span>
   </div>
   <div class="frame" aria-hidden="true">
     <span>+</span><span>+</span><span>+</span><span>+</span>
   </div>
-  <svg id="kiss-display" viewBox="0 0 24 24"><path id="kiss-path" fill="#FF69B4" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+  <svg id="kiss-display" viewBox="0 0 24 24"><path id="kiss-path" fill="#C2410C" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
   <div id="emoji-display">🤗</div>
   <div id="location-display"></div>
-  <button id="back-btn" type="button">&lt; SEND ANOTHER</button>
+  <button id="back-btn" type="button">Send another ♡</button>
 </div>
 
 <div id="app-toast" role="status" aria-live="polite" aria-atomic="true"></div>
@@ -522,7 +999,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 let selectedType = 'kiss';
-let selectedColor = '#FF69B4';
+let selectedColor = '#C2410C';
 let locMode = 'off';
 let selectedFile = null;
 let previewObjectUrl = null;
@@ -578,7 +1055,7 @@ if (inviteChannel) {
 }
 
 const colors = [
-  '#FF69B4','#FF0000','#FF1493','#800080','#9400D3',
+  '#C2410C','#DC2626','#D4A373','#365314','#92400E',
   '#0000FF','#00BFFF','#00CED1','#00FF00','#008000',
   '#FFD700','#FFA500','#FF8C00','#8B4513','#000000',
   '#808080','#F5F5F5','#FFC0CB','#E6E6FA','#40E0D0'
@@ -942,7 +1419,7 @@ async function sendOneSignalNotification(type, kissId, channel = activeChannel) 
         contents: { en: body },
         data: { channel, kissId, senderDeviceId: deviceId },
         url: buildInviteUrl(kissId, channel),
-        chrome_web_icon: new URL('/icon.png', location.href).href
+        chrome_web_icon: new URL('icon.png', location.href).href
       })
     }, 12000);
 
@@ -984,7 +1461,7 @@ document.getElementById('send-btn').addEventListener('click', async () => {
     : null;
 
   setComposerBusy(true);
-  sendBtn.textContent = 'SENDING';
+  sendBtn.textContent = 'Sending…';
 
   try {
     let location = null;
@@ -1047,7 +1524,7 @@ document.getElementById('send-btn').addEventListener('click', async () => {
     document.getElementById('custom-loc').value = '';
     clearCanvas();
 
-    showReceive(kissData);
+    showReceive(kissData, 'sent');
   } catch (err) {
     console.error('Send failed:', err);
     if (err?.message === 'MEDIA_UPLOAD_FAILED') {
@@ -1057,16 +1534,19 @@ document.getElementById('send-btn').addEventListener('click', async () => {
     }
   } finally {
     setComposerBusy(false);
-    sendBtn.textContent = 'SEND';
+    sendBtn.textContent = 'Send with love ♥';
   }
 });
 
 // === Receive ===
-function showReceive(k) {
+function showReceive(k, context = 'received') {
   const type = (k && k.type) ? k.type : 'kiss';
 
-  document.getElementById('rx-label').textContent =
-    '[ INCOMING / ' + String(type).toUpperCase() + ' ]';
+  document.getElementById('rx-label').textContent = context === 'sent'
+    ? 'Sent with love ♡'
+    : (type === 'hug' ? 'A hug for you ♡' :
+       type === 'papoi' ? 'A little surprise for you ♡' :
+       type === 'draw' ? 'A drawing for you ♡' : 'A kiss for you ♡');
 
   document.getElementById('send-view').classList.add('hidden');
   document.getElementById('receive-view').classList.remove('hidden');
@@ -1093,7 +1573,7 @@ function showReceive(k) {
       emoji.classList.add('bounce');
     } else {
       svg.style.display = 'block';
-      document.getElementById('kiss-path').setAttribute('fill', k.color || '#FF69B4');
+      document.getElementById('kiss-path').setAttribute('fill', k.color || '#C2410C');
       void svg.offsetWidth;
       svg.classList.add('bounce');
     }
@@ -1114,9 +1594,9 @@ function showReceive(k) {
   }
 
   const fallbackText =
-    type === 'hug'   ? '🤗 A HUG FOR YOU' :
-    type === 'papoi' ? '🍌 PAPOI!' :
-    type === 'draw'  ? '✏️ A DRAWING' : '💕';
+    type === 'hug'   ? '🤗 A hug for you' :
+    type === 'papoi' ? '🍌 Papoi!' :
+    type === 'draw'  ? '✏️ A drawing for you' : '💕';
 
   locDisplay.innerHTML = html || (!k.mediaUrl ? fallbackText : '');
 
@@ -1278,7 +1758,7 @@ function setNotificationButtonState(permission, optedIn = false) {
   const btn = document.getElementById('notif-btn');
   const active = Boolean(permission && optedIn);
   btn.classList.toggle('on', active);
-  btn.textContent = active ? '🔔 NOTIFICATIONS ON' : '🔔 ENABLE NOTIFICATIONS';
+  btn.textContent = active ? '🔔 Notifications on' : '🔔 Enable notifications';
 }
 
 async function refreshNotificationState() {
@@ -1299,7 +1779,7 @@ document.getElementById('notif-btn').addEventListener('click', async () => {
   const btn = document.getElementById('notif-btn');
   if (btn.dataset.busy === '1') return;
   btn.dataset.busy = '1';
-  btn.textContent = '🔔 WORKING...';
+  btn.textContent = '🔔 One sec…';
 
   try {
     await withOneSignal(async OneSignal => {
