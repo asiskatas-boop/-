@@ -2,980 +2,692 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#FFFBF5">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#FDF8F3">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>Kisses</title>
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="icon" type="image/png" href="icon.png">
-
+<title>Ηλία ρίχτο 💋</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@500;700;800&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
 
 <!-- OneSignal -->
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 <script>
   window.OneSignalDeferred = window.OneSignalDeferred || [];
   OneSignalDeferred.push(async function(OneSignal) {
-    // Remove a legacy Firebase Messaging registration before OneSignal claims push.
-    if ('serviceWorker' in navigator) {
-      try {
-        const registrations = await navigator.serviceWorker.getRegistrations();
-        for (const registration of registrations) {
-          const worker = registration.active || registration.waiting || registration.installing;
-          if (worker?.scriptURL?.includes('/firebase-messaging-sw.js')) {
-            await registration.unregister();
-          }
-        }
-      } catch (err) {
-        console.warn('Legacy push worker cleanup failed:', err);
-      }
-    }
-
-    try {
-      await OneSignal.init({
-        appId: "6752ffdc-ebef-4aec-b9c7-ccb73f791cfd",
-        safari_web_id: "web.onesignal.auto.2b30b273-8f48-4327-8bae-bed77c33071b",
-        notifyButton: { enable: false },
-        allowLocalhostAsSecureOrigin: true
-      });
-    } catch (err) {
-      console.warn('OneSignal initialization failed:', err);
-      return;
-    }
-
-    // Forward notification clicks to the app so an already-open tab can display
-    // the exact kiss instead of whichever message happens to be newest.
-    try {
-      OneSignal.Notifications.addEventListener('click', event => {
-        const payload = {
-          data: event?.notification?.additionalData || event?.notification?.data || {},
-          launchUrl: event?.notification?.launchURL || event?.notification?.url || ''
-        };
-        window.__pendingKissNotification = payload;
-        window.dispatchEvent(new CustomEvent('kisses-notification-click', { detail: payload }));
-      });
-    } catch (e) {
-      console.warn('OneSignal click listener failed:', e);
-    }
-
-    // Keep the custom notification button in sync when browser permission or
-    // the OneSignal subscription changes outside the button click itself.
-    try {
-      const notifyStateChanged = () => window.dispatchEvent(new Event('kisses-notification-state-change'));
-      OneSignal.Notifications.addEventListener('permissionChange', notifyStateChanged);
-      OneSignal.User.PushSubscription.addEventListener('change', notifyStateChanged);
-    } catch (e) {
-      console.warn('OneSignal state listeners failed:', e);
-    }
+    await OneSignal.init({
+      appId: "6752ffdc-ebef-4aec-b9c7-ccb73f791cfd",
+      safari_web_id: "web.onesignal.auto.2b30b273-8f48-4327-8bae-bed77c33071b",
+      notifyButton: { enable: false },
+      allowLocalhostAsSecureOrigin: true
+    });
   });
 </script>
 
 <style>
-  :root{
-    --paper:#F4F4F0;
-    --ink:#111111;
-    --red:#E61919;
-    --mono:'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
-    --macro:'Archivo Black', 'Inter', 'Helvetica Neue', Arial, sans-serif;
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --ink: #2A1F1A;
+    --ink-soft: #6B5A4E;
+    --cream: #FDF8F3;
+    --cream-deep: #F5EBE0;
+    --rose: #C94060;
+    --rose-deep: #A82E4C;
+    --rose-soft: #F5D5DC;
+    --hairline: #E8DDD1;
   }
 
-  *{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-  html,body{
-    width:100%; min-height:100%; overflow:hidden; overscroll-behavior:none;
-    font-family:var(--mono);
-  }
-  body{
-    height:100dvh;
-    background:var(--paper);
-    color:var(--ink);
-    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-    display:flex; align-items:stretch; justify-content:center;
-  }
-
-  button,input{ font:inherit; }
-  button:focus-visible,input:focus-visible{ outline:2px solid var(--red); outline-offset:2px; }
-  button{ touch-action:manipulation; }
-  button:disabled,input:disabled{ cursor:not-allowed; opacity:.58; }
-  .controls.is-sending .color-dot,.controls.is-sending #draw-canvas{ pointer-events:none; opacity:.7; }
-
-  /* ---- mechanical grain ---- */
-  .noise{
-    position:fixed; inset:0; z-index:9999; pointer-events:none;
-    opacity:.13; mix-blend-mode:multiply;
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+    background: var(--cream);
+    color: var(--ink);
+    font-family: 'Inter Tight', -apple-system, system-ui, sans-serif;
+    font-weight: 400;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
   }
 
-  /* ================= SEND VIEW ================= */
-  #send-view{
-    display:flex; flex-direction:column; align-items:center;
-    width:100%; height:100%; min-height:0; padding:10px; overflow-y:auto;
-    scrollbar-gutter:stable both-edges;
+  /* ========= SEND VIEW ========= */
+  #send-view {
+    width: 100%;
+    max-width: 420px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
   }
 
-  .controls{
-    display:grid; gap:1px; width:100%; max-width:420px;
-    margin:auto;
-    background:var(--ink); border:1.5px solid var(--ink);
-    box-shadow:0 8px 28px rgba(17,17,17,.10);
-  }
-  .controls > *{ background:var(--paper); }
-
-  /* ---- header ---- */
-  .header{ padding:9px 9px 8px; }
-  .meta-row{
-    display:flex; justify-content:space-between; align-items:center;
-    font-size:8.5px; font-weight:500; letter-spacing:.16em;
-    text-transform:uppercase; color:var(--ink);
-  }
-  .header h1{
-    font-family:var(--macro);
-    font-size:clamp(2.1rem, 12vw, 4rem);
-    line-height:.85; letter-spacing:-.05em;
-    text-transform:uppercase; color:var(--ink);
-    margin:5px 0 6px;
-  }
-  .stripes{
-    height:6px; margin:6px 0;
-    background:repeating-linear-gradient(45deg,
-      var(--red) 0 7px, var(--ink) 7px 14px);
-  }
-  .barcode{
-    height:12px; margin-top:5px;
-    background-image:repeating-linear-gradient(90deg,
-      var(--ink) 0 1px, transparent 1px 3px,
-      var(--ink) 3px 4px, transparent 4px 9px);
+  /* Topbar */
+  .topbar {
+    padding: 24px 22px 16px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
   }
 
-  /* ---- cards ---- */
-  .card{ padding:8px; border-radius:0; }
-  .section-label{
-    font-size:9px; font-weight:700; letter-spacing:.18em;
-    text-transform:uppercase; color:var(--ink);
-    border-bottom:1px solid var(--ink);
-    padding-bottom:4px; margin-bottom:7px;
+  .brand {
+    font-family: 'Cabinet Grotesk', sans-serif;
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--ink);
+    letter-spacing: -0.8px;
+    line-height: 1.1;
   }
 
-  /* ---- tabs ---- */
-  .tabs{
-    display:grid; grid-template-columns:repeat(4,1fr); gap:1px;
-    background:var(--ink); border:1px solid var(--ink);
-  }
-  .tabs button{
-    border:none; border-radius:0; background:var(--paper);
-    font-family:var(--mono); font-size:10px; font-weight:600;
-    letter-spacing:.08em; text-transform:uppercase; color:var(--ink);
-    padding:11px 2px; cursor:pointer;
-  }
-  .tabs button.active{ background:var(--ink); color:var(--paper); }
-
-  /* ---- preview viewport ---- */
-  #preview-area{
-    display:flex; justify-content:center; align-items:center;
-    min-height:96px; padding:10px; margin-top:8px;
-    border:1px solid var(--ink);
-    background-image:
-      linear-gradient(rgba(17,17,17,.10) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(17,17,17,.10) 1px, transparent 1px);
-    background-size:12px 12px;
-  }
-  #preview-icon{ width:72px; height:72px; }
-  #preview-emoji{ font-size:56px; line-height:1; }
-
-  #draw-canvas{
-    width:100%; max-width:300px; aspect-ratio:600 / 280; height:auto;
-    border:1px solid var(--ink); border-radius:0; background:#fff;
-    touch-action:none; cursor:crosshair; display:none;
+  .brand .accent {
+    color: var(--rose);
   }
 
-  /* ---- color ---- */
-  .color-row{ display:grid; grid-template-columns:repeat(10,1fr); gap:3px; }
-  .color-dot{
-    width:100%; aspect-ratio:1; border-radius:0;
-    border:1px solid var(--ink); cursor:pointer;
-  }
-  .color-dot.selected{
-    outline:2px solid var(--red); outline-offset:1px;
-    position:relative; z-index:2;
-  }
-  #custom-color{
-    width:100%; height:34px; margin-top:7px; padding:0;
-    border:1px solid var(--ink); border-radius:0;
-    background:var(--paper); cursor:pointer;
-  }
-  #custom-color::-webkit-color-swatch-wrapper{ padding:0; }
-  #custom-color::-webkit-color-swatch{ border:none; border-radius:0; }
-
-  /* ---- private channel ---- */
-  .channel-row{ display:grid; grid-template-columns:minmax(0,1fr) auto; gap:6px; }
-  #channel-code{
-    min-width:0; width:100%; padding:10px; border:1px solid var(--ink);
-    border-radius:0; background:var(--paper); color:var(--ink);
-    font-family:var(--mono); font-size:12px; font-weight:700;
-    letter-spacing:.18em; text-transform:uppercase;
-  }
-  #channel-set,#channel-share{
-    border:1px solid var(--ink); border-radius:0; background:var(--paper); color:var(--ink);
-    padding:10px 12px; font-family:var(--mono); font-size:9px; font-weight:700;
-    letter-spacing:.12em; text-transform:uppercase; cursor:pointer;
-  }
-  #channel-set:active,#channel-share:active{ background:var(--ink); color:var(--paper); }
-  .channel-tools{ display:flex; align-items:center; gap:8px; margin-top:6px; }
-  #channel-share{ flex:0 0 auto; padding:7px 9px; }
-  #channel-hint{
-    flex:1; font-size:8px; line-height:1.45; letter-spacing:.07em;
-    text-transform:uppercase; color:rgba(17,17,17,.66);
+  /* Tabs */
+  .tabs {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    padding: 0 22px 16px;
   }
 
-  /* ---- media ---- */
-  .photo-row{ display:flex; align-items:center; gap:8px; }
-  .media-btn{
-    flex:1; padding:11px; border:1px dashed var(--ink); border-radius:0;
-    background:var(--paper); color:var(--ink);
-    font-family:var(--mono); font-size:10px; font-weight:600;
-    letter-spacing:.12em; text-transform:uppercase;
-    cursor:pointer; text-align:center;
-  }
-  #preview-img{
-    width:44px; height:44px; border:1px solid var(--ink);
-    border-radius:0; display:none; object-fit:cover;
-  }
-  #preview-img.show{ display:block; }
-  #file-input{ display:none; }
-
-  /* ---- location ---- */
-  .loc-toggle{
-    display:grid; grid-template-columns:repeat(3,1fr); gap:1px;
-    background:var(--ink); border:1px solid var(--ink);
-  }
-  .loc-toggle button{
-    border:none; border-radius:0; background:var(--paper);
-    font-family:var(--mono); font-size:10px; font-weight:600;
-    letter-spacing:.10em; text-transform:uppercase; color:var(--ink);
-    padding:9px 4px; cursor:pointer;
-  }
-  .loc-toggle button.active{ background:var(--ink); color:var(--paper); }
-
-  #custom-loc{
-    display:none; width:100%; padding:10px; margin-top:7px;
-    border:1px solid var(--ink); border-radius:0;
-    font-family:var(--mono); font-size:11px; letter-spacing:.08em;
-    text-transform:uppercase; background:var(--paper); color:var(--ink);
-  }
-  #custom-loc.show{ display:block; }
-  #custom-loc::placeholder{ color:rgba(17,17,17,.40); }
-  #custom-loc:focus{ outline:2px solid var(--ink); outline-offset:-2px; }
-
-  /* ---- action buttons ---- */
-  #notif-btn{
-    border:none; border-radius:0; background:var(--paper);
-    color:var(--ink); font-family:var(--mono);
-    font-size:9px; font-weight:600; letter-spacing:.16em;
-    text-transform:uppercase; padding:11px; cursor:pointer;
-  }
-  #notif-btn.on{ background:var(--ink); color:var(--paper); }
-
-  #send-btn{
-    border:none; border-radius:0;
-    background:var(--red); color:#fff;
-    font-family:var(--macro); font-size:20px;
-    letter-spacing:.04em; text-transform:uppercase;
-    padding:18px; cursor:pointer;
-  }
-  #send-btn:active{ background:var(--ink); }
-  #send-btn:disabled{ background:rgba(17,17,17,.35); }
-
-  /* ================= RECEIVE VIEW ================= */
-  #receive-view{
-    position:relative;
-    display:flex; flex-direction:column; align-items:center; justify-content:safe center;
-    width:100%; height:100%; min-height:0; padding:58px 18px 40px; gap:18px;
-    overflow-y:auto;
-    background-color:var(--paper);
-    background-image:radial-gradient(rgba(17,17,17,.13) 0.9px, transparent 1px);
-    background-size:6px 6px;
-    animation:fadeIn .3s;
-  }
-  @keyframes fadeIn{ from{opacity:0} to{opacity:1} }
-
-  .rx-bar{
-    position:absolute; top:0; left:0; right:0;
-    display:flex; justify-content:space-between; align-items:center;
-    padding:12px 14px 10px;
-    font-size:9px; font-weight:600; letter-spacing:.16em;
-    text-transform:uppercase; color:var(--ink);
-    border-bottom:2px solid var(--red);
-    background:var(--paper);
+  .tab {
+    padding: 12px 4px;
+    background: transparent;
+    border: 1.5px solid var(--hairline);
+    border-radius: 14px;
+    color: var(--ink-soft);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
   }
 
-  .frame{ position:absolute; inset:8px; pointer-events:none; }
-  .frame span{
-    position:absolute; font-family:var(--mono);
-    font-size:14px; line-height:1; color:var(--ink);
-  }
-  .frame span:nth-child(1){ top:0; left:0; }
-  .frame span:nth-child(2){ top:0; right:0; }
-  .frame span:nth-child(3){ bottom:0; left:0; }
-  .frame span:nth-child(4){ bottom:0; right:0; }
-
-  #kiss-display{ width:150px; height:150px; }
-  #kiss-display.bounce{ animation:kissPop .5s cubic-bezier(.34,1.56,.64,1); }
-  @keyframes kissPop{
-    0%{ transform:scale(.5) }
-    50%{ transform:scale(1.4) }
-    100%{ transform:scale(1) }
+  .tab-emoji {
+    font-size: 22px;
+    line-height: 1;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
-  #emoji-display{ font-size:140px; line-height:1; display:none; }
-  #emoji-display.bounce{ animation:kissPop .5s cubic-bezier(.34,1.56,.64,1); }
-
-  #location-display{
-    max-width:min(88vw, 380px); padding:10px 12px;
-    border:1.5px solid var(--ink); border-radius:0;
-    background:var(--paper); color:var(--ink);
-    font-size:10px; letter-spacing:.12em; text-transform:uppercase;
-    line-height:1.7; text-align:left; word-break:break-word;
-  }
-  #location-display a{
-    color:var(--ink); text-decoration:none;
-    border-bottom:2px solid var(--red); font-weight:600;
-  }
-  #location-display img{
-    max-width:min(78vw, 300px); max-height:38vh;
-    margin-top:10px; display:block; object-fit:contain;
-    border:1.5px solid var(--ink); border-radius:0;
+  .tab.active {
+    border-color: var(--rose);
+    background: var(--rose);
+    color: white;
+    transform: translateY(-2px);
   }
 
-  #back-btn{
-    padding:12px 22px;
-    border:1px solid var(--ink); border-radius:0;
-    background:var(--paper); color:var(--ink);
-    font-family:var(--mono); font-size:10px; font-weight:600;
-    letter-spacing:.16em; text-transform:uppercase; cursor:pointer;
-  }
-  #back-btn:active{ background:var(--ink); color:var(--paper); }
-
-  #app-toast{
-    position:fixed; left:50%; bottom:calc(14px + env(safe-area-inset-bottom)); z-index:10000;
-    max-width:min(92vw, 420px); padding:10px 12px;
-    border:1.5px solid var(--ink); background:var(--paper); color:var(--ink);
-    font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
-    box-shadow:4px 4px 0 var(--ink);
-    transform:translate(-50%, 140%); opacity:0; pointer-events:none;
-    transition:transform .2s ease, opacity .2s ease;
-  }
-  #app-toast.show{ transform:translate(-50%, 0); opacity:1; }
-  #app-toast.error{ border-color:var(--red); box-shadow:4px 4px 0 var(--red); }
-
-  .hidden{ display:none !important; }
-
-  @media (prefers-reduced-motion: reduce){
-    *,*::before,*::after{ animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; }
+  .tab.active .tab-emoji {
+    transform: scale(1.2) rotate(-8deg);
   }
 
-  @media (max-width:380px){
-    .header h1{ font-size:clamp(1.9rem, 11.5vw, 3rem); }
-    .header{ padding:8px 8px 7px; }
-    .card{ padding:7px; }
-    .tabs button{ padding:10px 2px; font-size:9px; }
-    .loc-toggle button{ padding:8px 3px; font-size:9px; }
-    #preview-icon{ width:62px; height:62px; }
-    #preview-emoji{ font-size:48px; }
-    #preview-area{ min-height:84px; }
-    #send-btn{ padding:15px; font-size:18px; }
-    #kiss-display{ width:130px; height:130px; }
-    #emoji-display{ font-size:120px; }
-    .channel-row{ grid-template-columns:minmax(0,1fr) 62px; }
-    #channel-set{ padding-inline:6px; }
-  }
-
-  @media (max-height:720px){
-    .header h1{ font-size:clamp(1.85rem, 9vw, 2.8rem); margin:3px 0 4px; }
-    .header{ padding:7px; }
-    .card{ padding:7px; }
-    #preview-area{ min-height:78px; padding:7px; }
-    #preview-icon{ width:58px; height:58px; }
-    #preview-emoji{ font-size:44px; }
-    #send-btn{ padding:14px; }
-  }
-
-  /* ================= MARKETNEST THEME OVERRIDES =================
-     Warm, community-driven, handmade visual system.
-     Functional IDs/classes are intentionally unchanged.
-  */
-  :root{
-    --primary:#C2410C;
-    --primary-hover:#9A3412;
-    --primary-active:#7C2D12;
-    --secondary:#D4A373;
-    --tertiary:#365314;
-    --background:#FFFBF5;
-    --surface:#FFFFFF;
-    --ink:#1C1917;
-    --muted:#57534E;
-    --subtle:#A8A29E;
-    --border:#E7E5E4;
-    --border-strong:#D6D3D1;
-    --success:#22C55E;
-    --warning:#F59E0B;
-    --error:#DC2626;
-    --info:#3B82F6;
-    --paper:var(--background);
-    --red:var(--primary);
-    --mono:'Nunito', system-ui, sans-serif;
-    --macro:'Fraunces', Georgia, serif;
-    --body:'Nunito', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  }
-
-  html,body{ font-family:var(--body); }
-  body{
-    background:var(--background);
-    color:var(--ink);
-  }
-
-  button,input{ font-family:var(--body); }
-  button:focus-visible,input:focus-visible{
-    outline:3px solid rgba(194,65,12,.20);
-    outline-offset:2px;
-  }
-  button:disabled,input:disabled{ opacity:.40; }
-
-  .noise{
-    opacity:.035;
-    mix-blend-mode:multiply;
-  }
-
-  #send-view{
-    padding:24px 16px;
-    background:
-      radial-gradient(circle at 15% 10%, rgba(212,163,115,.10), transparent 28%),
-      radial-gradient(circle at 90% 85%, rgba(54,83,20,.06), transparent 24%),
-      var(--background);
-  }
-
-  .controls{
-    display:grid;
-    gap:12px;
-    width:100%;
-    max-width:520px;
-    margin:auto;
-    padding:0;
-    background:transparent;
-    border:none;
-    box-shadow:none;
-  }
-  .controls > *{
-    background:var(--surface);
-    border:1px solid var(--border);
-    border-radius:8px;
-  }
-
-  /* Header — soft, playful, handmade */
-  .header{
-    position:relative;
-    overflow:hidden;
-    padding:24px 24px 22px;
-    background:#FFF8EF !important;
-    border:1px solid var(--border-strong) !important;
-    border-radius:24px !important;
-  }
-  .header::before,
-  .header::after{
-    position:absolute;
-    font-family:var(--macro);
-    color:rgba(194,65,12,.12);
-    pointer-events:none;
-  }
-  .header::before{
-    content:'♡';
-    top:10px;
-    right:18px;
-    font-size:42px;
-    transform:rotate(9deg);
-  }
-  .header::after{
-    content:'✦';
-    right:62px;
-    bottom:14px;
-    font-size:18px;
-    color:rgba(54,83,20,.18);
-  }
-  .header-kicker{
-    display:inline-flex;
-    align-items:center;
-    gap:7px;
-    padding:6px 10px;
-    border:1px solid rgba(194,65,12,.24);
-    border-radius:9999px;
-    background:#FFFDF9;
-    color:var(--primary);
-    font-size:12px;
-    font-weight:800;
-    letter-spacing:.02em;
-  }
-  .header-kicker .heart{
-    font-size:14px;
-    line-height:1;
-  }
-  .header h1{
-    max-width:430px;
-    font-family:var(--macro);
-    font-size:clamp(2.65rem, 10vw, 4.35rem);
-    font-weight:600;
-    line-height:.98;
-    letter-spacing:-.025em;
-    text-transform:none;
-    color:var(--ink);
-    margin:14px 0 10px;
-  }
-  .header h1 .love-word{
-    color:var(--primary);
-    font-weight:700;
-  }
-  .header-subtitle{
-    max-width:390px;
-    color:var(--muted);
-    font-family:var(--body);
-    font-size:14px;
-    font-weight:500;
-    line-height:1.55;
-  }
-  .header-flourish{
-    display:flex;
-    align-items:center;
-    gap:9px;
-    margin-top:17px;
-    color:var(--secondary);
-    font-family:var(--macro);
-    font-size:14px;
-  }
-  .header-flourish::before,
-  .header-flourish::after{
-    content:'';
-    height:1px;
-    flex:1;
-    background:linear-gradient(90deg, transparent, rgba(212,163,115,.75));
-  }
-  .header-flourish::after{
-    background:linear-gradient(90deg, rgba(212,163,115,.75), transparent);
-  }
-  .meta-row,.stripes,.barcode{ display:none; }
-
-  /* Cards + labels */
-  .card{
-    padding:20px;
-    border:1px solid var(--border) !important;
-    border-radius:8px !important;
-    background:var(--surface) !important;
-  }
-  .card:hover{ border-color:var(--border-strong) !important; }
-  .section-label{
-    font-family:var(--body);
-    font-size:11px;
-    font-weight:700;
-    line-height:1.2;
-    letter-spacing:.01em;
-    text-transform:none;
-    color:var(--tertiary);
-    border-bottom:1px solid var(--border);
-    padding-bottom:8px;
-    margin-bottom:14px;
-  }
-
-  /* Tabs / segmented chips */
-  .tabs{
-    display:grid;
-    grid-template-columns:repeat(4,1fr);
-    gap:6px;
-    background:transparent;
-    border:none;
-  }
-  .tabs button{
-    min-height:40px;
-    padding:8px 6px;
-    border:1px solid var(--border-strong);
-    border-radius:4px;
-    background:var(--surface);
-    color:var(--muted);
-    font-family:var(--body);
-    font-size:12px;
-    font-weight:600;
-    letter-spacing:0;
-    text-transform:none;
-    transition:background .15s ease,border-color .15s ease,color .15s ease;
-  }
-  .tabs button:hover{ background:#FDF6EC; border-color:var(--secondary); }
-  .tabs button.active{
-    background:var(--primary);
-    border-color:var(--primary);
-    color:#fff;
+  .tab:active {
+    transform: scale(0.95);
   }
 
   /* Preview */
-  #preview-area{
-    min-height:132px;
-    padding:20px;
-    margin-top:14px;
-    border:1px solid var(--border-strong);
-    border-radius:8px;
-    background-color:var(--background);
-    background-image:
-      linear-gradient(rgba(212,163,115,.18) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(212,163,115,.18) 1px, transparent 1px);
-    background-size:16px 16px;
-  }
-  #preview-icon{ width:82px; height:82px; }
-  #draw-canvas{
-    border:1.5px solid var(--border-strong);
-    border-radius:8px;
-    background:#fff;
+  .preview {
+    margin: 0 22px 18px;
+    height: 190px;
+    background: var(--cream-deep);
+    border-radius: 28px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
   }
 
-  /* Color */
-  .color-row{ gap:6px; }
-  .color-dot{
-    border:1px solid var(--border-strong);
-    border-radius:4px;
-  }
-  .color-dot.selected{
-    outline:3px solid rgba(194,65,12,.20);
-    outline-offset:2px;
-    border-color:var(--primary);
-  }
-  #custom-color{
-    height:42px;
-    margin-top:12px;
-    border:1.5px solid var(--border-strong);
-    border-radius:4px;
-    background:var(--surface);
+  .preview::before {
+    content: '';
+    position: absolute;
+    top: -40%;
+    left: -20%;
+    width: 60%;
+    height: 180%;
+    background: radial-gradient(circle, rgba(201,64,96,0.12), transparent 70%);
+    pointer-events: none;
   }
 
-  /* Inputs */
-  #channel-code,
-  #custom-loc{
-    height:42px;
-    padding:0 14px;
-    border:1.5px solid var(--border-strong);
-    border-radius:4px;
-    background:var(--surface);
-    color:var(--ink);
-    font-family:var(--body);
-    font-size:15px;
-    font-weight:600;
-    letter-spacing:.08em;
-  }
-  #channel-code:focus,
-  #custom-loc:focus{
-    outline:none;
-    border-color:var(--primary);
-    box-shadow:0 0 0 3px rgba(194,65,12,.15);
-  }
-  #custom-loc::placeholder{ color:var(--subtle); }
-
-  .channel-row{ gap:8px; }
-  .channel-tools{ gap:10px; margin-top:10px; }
-  #channel-hint{
-    font-family:var(--body);
-    font-size:11px;
-    line-height:1.5;
-    letter-spacing:0;
-    text-transform:none;
-    color:var(--muted);
+  .preview::after {
+    content: '';
+    position: absolute;
+    bottom: -30%;
+    right: -10%;
+    width: 50%;
+    height: 140%;
+    background: radial-gradient(circle, rgba(201,64,96,0.08), transparent 70%);
+    pointer-events: none;
   }
 
-  /* Buttons */
-  #channel-set,
-  #channel-share,
-  #back-btn{
-    border:1.5px solid var(--primary);
-    border-radius:4px;
-    background:transparent;
-    color:var(--primary);
-    font-family:var(--body);
-    font-size:12px;
-    font-weight:600;
-    letter-spacing:0;
-    text-transform:none;
-    cursor:pointer;
-  }
-  #channel-set{ padding:0 18px; }
-  #channel-share{ padding:8px 12px; }
-  #channel-set:hover,
-  #channel-share:hover,
-  #back-btn:hover{ background:#FDF6EC; }
-  #channel-set:active,
-  #channel-share:active,
-  #back-btn:active{
-    background:var(--primary);
-    color:#fff;
+  #preview-icon {
+    width: 100px;
+    height: 100px;
+    position: relative;
+    z-index: 1;
+    filter: drop-shadow(0 6px 16px rgba(201,64,96,0.25));
   }
 
-  .media-btn{
-    padding:12px 16px;
-    border:1.5px dashed var(--secondary);
-    border-radius:8px;
-    background:var(--background);
-    color:var(--primary);
-    font-family:var(--body);
-    font-size:13px;
-    font-weight:600;
-    letter-spacing:0;
-    text-transform:none;
+  #preview-emoji {
+    font-size: 90px;
+    line-height: 1;
+    position: relative;
+    z-index: 1;
+    filter: drop-shadow(0 6px 16px rgba(201,64,96,0.25));
   }
-  .media-btn:hover{ background:#FDF6EC; border-color:var(--primary); }
-  #preview-img{
-    width:52px;
-    height:52px;
-    border:1px solid var(--border-strong);
-    border-radius:8px;
+
+  #draw-canvas {
+    width: 88%;
+    max-width: 340px;
+    aspect-ratio: 600 / 280;
+    height: auto;
+    background: white;
+    border-radius: 16px;
+    touch-action: none;
+    cursor: crosshair;
+    display: none;
+    position: relative;
+    z-index: 1;
+    box-shadow: 0 2px 8px rgba(42,31,26,0.06);
   }
+
+  /* Sections */
+  .section {
+    padding: 0 22px 16px;
+  }
+
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+
+  .section-label {
+    font-family: 'Cabinet Grotesk', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.2px;
+  }
+
+  .section-hint {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--ink-soft);
+    letter-spacing: 0.02em;
+  }
+
+  /* Color grid */
+  .color-grid {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 6px;
+  }
+
+  .color-dot {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+    border: 1.5px solid transparent;
+  }
+
+  .color-dot.selected {
+    border-color: var(--ink);
+    transform: scale(1.15);
+    box-shadow: 0 0 0 3px var(--cream), 0 0 0 4.5px var(--rose);
+  }
+
+  #custom-color {
+    width: 100%;
+    height: 36px;
+    border: 1.5px solid var(--hairline);
+    border-radius: 12px;
+    cursor: pointer;
+    background: white;
+    margin-top: 10px;
+    padding: 2px;
+  }
+
+  #custom-color::-webkit-color-swatch-wrapper { padding: 0; }
+  #custom-color::-webkit-color-swatch { border: none; border-radius: 9px; }
+  #custom-color::-moz-color-swatch { border: none; border-radius: 9px; }
+
+  /* Photo */
+  .photo-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .media-btn {
+    flex: 1;
+    padding: 13px 18px;
+    background: white;
+    border: 1.5px solid var(--hairline);
+    border-radius: 14px;
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .media-btn::after {
+    content: '→';
+    font-size: 16px;
+    color: var(--rose);
+    transition: transform 0.2s;
+  }
+
+  .media-btn:active {
+    background: var(--cream-deep);
+    transform: scale(0.98);
+  }
+
+  .media-btn:active::after {
+    transform: translateX(3px);
+  }
+
+  #preview-img {
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+    display: none;
+    object-fit: cover;
+    border: 1.5px solid var(--hairline);
+  }
+
+  #preview-img.show { display: block; }
+
+  #file-input { display: none; }
 
   /* Location */
-  .loc-toggle{
-    gap:6px;
-    background:transparent;
-    border:none;
-  }
-  .loc-toggle button{
-    min-height:36px;
-    padding:7px 10px;
-    border:1px solid var(--border-strong);
-    border-radius:4px;
-    background:var(--surface);
-    color:var(--muted);
-    font-family:var(--body);
-    font-size:12px;
-    font-weight:600;
-    letter-spacing:0;
-  }
-  .loc-toggle button:hover{ background:#FDF6EC; }
-  .loc-toggle button.active{
-    background:var(--tertiary);
-    border-color:var(--tertiary);
-    color:#fff;
+  .loc-toggle {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin-bottom: 10px;
   }
 
-  /* Notification / send CTA */
-  #notif-btn{
-    min-height:42px;
-    border:1.5px solid var(--tertiary);
-    border-radius:4px;
-    background:transparent;
-    color:var(--tertiary);
-    font-family:var(--body);
-    font-size:13px;
-    font-weight:600;
-    letter-spacing:0;
-    text-transform:none;
-    padding:11px 16px;
-  }
-  #notif-btn:hover{ background:#F3F6ED; }
-  #notif-btn.on{ background:var(--tertiary); color:#fff; }
-
-  #send-btn{
-    min-height:50px;
-    border:none;
-    border-radius:4px;
-    background:var(--primary);
-    color:#fff;
-    font-family:var(--body);
-    font-size:16px;
-    font-weight:700;
-    letter-spacing:0;
-    text-transform:none;
-    padding:14px 32px;
-  }
-  #send-btn:hover{ background:var(--primary-hover); }
-  #send-btn:active{ background:var(--primary-active); }
-  #send-btn:disabled{ background:var(--primary); opacity:.40; }
-
-  /* Receive view */
-  #receive-view{
-    padding:76px 18px 44px;
-    gap:20px;
-    background-color:var(--background);
-    background-image:
-      radial-gradient(rgba(212,163,115,.22) .8px, transparent .9px);
-    background-size:10px 10px;
-  }
-  .rx-bar{
-    padding:14px 18px;
-    font-family:var(--body);
-    font-size:11px;
-    font-weight:700;
-    letter-spacing:.01em;
-    text-transform:none;
-    color:var(--tertiary);
-    border-bottom:2px solid var(--secondary);
-    background:rgba(255,251,245,.96);
-    backdrop-filter:blur(8px);
-  }
-  .frame span{ color:var(--secondary); }
-  #location-display{
-    max-width:min(88vw,420px);
-    padding:16px;
-    border:1px solid var(--border-strong);
-    border-radius:8px;
-    background:var(--surface);
-    color:var(--ink);
-    font-family:var(--body);
-    font-size:14px;
-    letter-spacing:0;
-    text-transform:none;
-    line-height:1.6;
-  }
-  #location-display a{
-    color:var(--primary);
-    border-bottom:1px solid var(--primary);
-  }
-  #location-display img{
-    border:1px solid var(--border-strong);
-    border-radius:8px;
-  }
-  #back-btn{
-    padding:12px 22px;
-    background:var(--surface);
+  .loc-toggle button {
+    padding: 11px 4px;
+    border: 1.5px solid var(--hairline);
+    background: white;
+    color: var(--ink-soft);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 12px;
+    transition: all 0.2s;
   }
 
-  /* Toast — overlay exception */
-  #app-toast{
-    padding:11px 14px;
-    border:1px solid var(--border-strong);
-    border-radius:4px;
-    background:var(--surface);
-    color:var(--ink);
-    font-family:var(--body);
-    font-size:12px;
-    font-weight:600;
-    letter-spacing:0;
-    text-transform:none;
-    box-shadow:0 8px 24px rgba(28,25,23,.10);
-  }
-  #app-toast.error{
-    border-color:var(--error);
-    box-shadow:0 8px 24px rgba(220,38,38,.10);
+  .loc-toggle button.active {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: white;
   }
 
-  @media (max-width:380px){
-    #send-view{ padding:14px 10px; }
-    .controls{ gap:9px; }
-    .header{ padding:20px 18px 18px; }
-    .card{ padding:15px; }
-    .header h1{ font-size:clamp(2.35rem, 12vw, 3.55rem); margin-top:12px; }
-    .header-subtitle{ font-size:13px; }
-    .header::before{ font-size:34px; right:14px; }
-    .tabs{ gap:4px; }
-    .tabs button{ font-size:11px; }
-    #preview-area{ min-height:108px; padding:14px; }
-    #send-btn{ font-size:15px; }
+  #custom-loc {
+    display: none;
+    width: 100%;
+    padding: 13px 16px;
+    border: 1.5px solid var(--hairline);
+    background: white;
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 12px;
   }
 
-  @media (max-height:720px){
-    #send-view{ padding-block:12px; }
-    .controls{ gap:8px; }
-    .header{ padding:17px 18px 15px; }
-    .header h1{ font-size:clamp(2.05rem, 8vw, 3rem); margin:9px 0 7px; }
-    .header-subtitle{ font-size:12.5px; }
-    .header-flourish{ margin-top:11px; }
-    .card{ padding:14px; }
-    #preview-area{ min-height:92px; padding:10px; }
-    #send-btn{ min-height:46px; padding:12px 24px; }
+  #custom-loc::placeholder { color: #B8A89A; }
+  #custom-loc.show { display: block; }
+  #custom-loc:focus { outline: none; border-color: var(--rose); }
+
+  /* Actions */
+  .actions {
+    padding: 8px 22px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: auto;
   }
 
+  #notif-btn {
+    padding: 13px 18px;
+    background: transparent;
+    border: 1.5px solid var(--hairline);
+    border-radius: 14px;
+    color: var(--ink-soft);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  #notif-btn::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--hairline);
+    transition: background 0.2s;
+  }
+
+  #notif-btn.on {
+    border-color: var(--rose);
+    color: var(--rose);
+  }
+
+  #notif-btn.on::before {
+    background: var(--rose);
+    box-shadow: 0 0 8px rgba(201,64,96,0.5);
+  }
+
+  #notif-btn:active { transform: scale(0.98); }
+
+  #send-btn {
+    padding: 20px 28px;
+    background: var(--rose);
+    border: none;
+    border-radius: 18px;
+    color: white;
+    font-family: 'Cabinet Grotesk', sans-serif;
+    font-size: 17px;
+    font-weight: 800;
+    letter-spacing: -0.2px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 6px 20px rgba(201,64,96,0.28);
+    position: relative;
+    overflow: hidden;
+  }
+
+  #send-btn::after {
+    content: '💋';
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 20px;
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  #send-btn:active {
+    transform: scale(0.97);
+    box-shadow: 0 3px 10px rgba(201,64,96,0.3);
+  }
+
+  #send-btn:active::after {
+    transform: translateY(-50%) scale(1.3) rotate(-15deg);
+  }
+
+  #send-btn:disabled {
+    background: var(--hairline);
+    color: var(--ink-soft);
+    box-shadow: none;
+  }
+
+  #send-btn:disabled::after {
+    opacity: 0.4;
+  }
+
+  /* === Love burst animation === */
+  .burst-heart {
+    position: fixed;
+    font-size: 28px;
+    pointer-events: none;
+    z-index: 9999;
+    animation: burstOut 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    will-change: transform, opacity;
+  }
+
+  @keyframes burstOut {
+    0% {
+      transform: translate(0, 0) scale(0.5) rotate(0deg);
+      opacity: 1;
+    }
+    60% {
+      opacity: 1;
+    }
+    100% {
+      transform: translate(var(--tx), var(--ty)) scale(1.4) rotate(var(--rot));
+      opacity: 0;
+    }
+  }
+
+  #send-btn.bursting {
+    animation: sendPulse 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  @keyframes sendPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+    100% { transform: scale(1); }
+  }
+
+  /* ========= RECEIVE VIEW ========= */
+  #receive-view {
+    position: fixed;
+    inset: 0;
+    background: var(--cream);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: env(safe-area-inset-top) 28px env(safe-area-inset-bottom);
+    gap: 36px;
+    z-index: 100;
+    animation: fadeIn 0.4s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.98); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  #kiss-display {
+    width: 200px;
+    height: 200px;
+    filter: drop-shadow(0 12px 32px rgba(201,64,96,0.3));
+  }
+
+  #kiss-display.bounce { animation: pop 0.75s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+  @keyframes pop {
+    0% { transform: scale(0.3) rotate(-20deg); opacity: 0; }
+    50% { transform: scale(1.12) rotate(4deg); opacity: 1; }
+    100% { transform: scale(1) rotate(0); }
+  }
+
+  #emoji-display {
+    font-size: 180px;
+    line-height: 1;
+    display: none;
+    filter: drop-shadow(0 12px 32px rgba(201,64,96,0.3));
+  }
+
+  #emoji-display.bounce { animation: pop 0.75s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+  #location-display {
+    color: var(--ink-soft);
+    font-size: 15px;
+    font-weight: 500;
+    text-align: center;
+    max-width: 90vw;
+    line-height: 1.6;
+    padding: 12px 20px;
+    background: white;
+    border-radius: 16px;
+    border: 1.5px solid var(--hairline);
+  }
+
+  #location-display:empty {
+    display: none;
+  }
+
+  #location-display a {
+    color: var(--rose);
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  #location-display img {
+    max-width: min(80vw, 320px);
+    max-height: 45vh;
+    border-radius: 20px;
+    margin: 8px auto 0;
+    display: block;
+    object-fit: contain;
+    box-shadow: 0 8px 24px rgba(42,31,26,0.12);
+  }
+
+  #back-btn {
+    padding: 14px 32px;
+    background: var(--ink);
+    border: none;
+    border-radius: 14px;
+    color: white;
+    font-family: 'Cabinet Grotesk', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  #back-btn:active {
+    transform: scale(0.97);
+    background: var(--rose);
+  }
+
+  .hidden { display: none !important; }
+
+  /* Small phones */
+  @media (max-width: 380px) {
+    .topbar { padding: 20px 18px 14px; }
+    .brand { font-size: 21px; }
+    .tabs { padding: 0 18px 14px; gap: 5px; }
+    .tab { padding: 10px 3px; font-size: 11px; border-radius: 12px; }
+    .tab-emoji { font-size: 20px; }
+    .preview { margin: 0 18px 16px; height: 165px; border-radius: 24px; }
+    #preview-icon { width: 88px; height: 88px; }
+    #preview-emoji { font-size: 76px; }
+    .section { padding: 0 18px 14px; }
+    .section-label { font-size: 14px; }
+    .color-grid { gap: 5px; }
+    .media-btn { padding: 12px 16px; font-size: 12px; border-radius: 12px; }
+    .loc-toggle button { padding: 10px 3px; font-size: 11px; }
+    .actions { padding: 6px 18px 22px; }
+    #send-btn { padding: 18px 24px; font-size: 16px; border-radius: 16px; }
+    #notif-btn { padding: 11px 16px; font-size: 12px; border-radius: 12px; }
+    #kiss-display { width: 170px; height: 170px; }
+    #emoji-display { font-size: 150px; }
+  }
+
+  @media (max-height: 500px) {
+    .preview { height: 120px; }
+    #preview-icon { width: 70px; height: 70px; }
+    #preview-emoji { font-size: 60px; }
+    .topbar { padding: 12px 18px 10px; }
+  }
 </style>
 </head>
 <body>
 
-<div class="noise" aria-hidden="true"></div>
-
+<!-- ============ SEND VIEW ============ -->
 <div id="send-view">
-  <div class="controls">
 
-    <header class="header">
-      <div class="header-kicker"><span class="heart" aria-hidden="true">♥</span> Kisses</div>
-      <h1>Send a little<br><span class="love-word">love</span></h1>
-      <p class="header-subtitle">Pick something sweet and send it to your person.</p>
-      <div class="header-flourish" aria-hidden="true">♡</div>
-    </header>
+  <header class="topbar">
+    <div class="brand">Ηλία ρίχτο<span class="accent">.</span></div>
+  </header>
 
-    <div class="card">
-      <div class="section-label">Your private channel</div>
-      <div class="channel-row">
-        <input id="channel-code" type="text" inputmode="text" autocomplete="off" spellcheck="false" maxlength="12" aria-label="Private channel code">
-        <button id="channel-set" type="button">Use code</button>
-      </div>
-      <div class="channel-tools">
-        <button id="channel-share" type="button">Copy invite</button>
-        <div id="channel-hint">Only people with this code can receive your kisses.</div>
-      </div>
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-type="kiss"><span class="tab-emoji">💋</span>Kiss</button>
+    <button class="tab" data-type="hug"><span class="tab-emoji">🤗</span>Hug</button>
+    <button class="tab" data-type="papoi"><span class="tab-emoji">🍌</span>Papoi</button>
+    <button class="tab" data-type="draw"><span class="tab-emoji">✏️</span>Draw</button>
+  </nav>
+
+  <div class="preview">
+    <svg id="preview-icon" viewBox="0 0 24 24"><path id="preview-path" fill="#C94060" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+    <div id="preview-emoji" style="display:none">🤗</div>
+    <canvas id="draw-canvas"></canvas>
+  </div>
+
+  <section class="section">
+    <div class="section-head">
+      <div class="section-label">Color</div>
+      <div class="section-hint">pick one</div>
     </div>
+    <div class="color-grid" id="color-row"></div>
+    <input type="color" id="custom-color" value="#C94060">
+  </section>
 
-    <div class="card">
-      <div class="tabs" id="tabs">
-        <button type="button" data-type="kiss" class="active">💋 KISS</button>
-        <button type="button" data-type="hug">🤗 HUG</button>
-        <button type="button" data-type="papoi">🍌 PAPOI</button>
-        <button type="button" data-type="draw">✏️ DRAW</button>
-      </div>
-      <div id="preview-area">
-        <svg id="preview-icon" viewBox="0 0 24 24"><path id="preview-path" fill="#C2410C" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-        <div id="preview-emoji" style="display:none">🤗</div>
-        <canvas id="draw-canvas"></canvas>
-      </div>
+  <section class="section">
+    <div class="section-head">
+      <div class="section-label">Photo</div>
+      <div class="section-hint">optional</div>
     </div>
-
-    <div class="card">
-      <div class="section-label">Pick a color</div>
-      <div class="color-row" id="color-row"></div>
-      <input type="color" id="custom-color" value="#C2410C">
+    <div class="photo-row">
+      <button class="media-btn" onclick="document.getElementById('file-input').click()">Add Photo</button>
+      <img id="preview-img">
     </div>
+    <input type="file" id="file-input" accept="image/*">
+  </section>
 
-    <div class="card">
-      <div class="section-label">Add a photo</div>
-      <div class="photo-row">
-        <button type="button" class="media-btn" onclick="document.getElementById('file-input').click()">Add photo / GIF</button>
-        <img id="preview-img" alt="">
-      </div>
-      <input type="file" id="file-input" accept="image/*">
+  <section class="section">
+    <div class="section-head">
+      <div class="section-label">Location</div>
+      <div class="section-hint">optional</div>
     </div>
-
-    <div class="card">
-      <div class="section-label">Share a place</div>
-      <div class="loc-toggle" id="loc-toggle">
-        <button type="button" data-mode="off" class="active">No location</button>
-        <button type="button" data-mode="gps">Use GPS</button>
-        <button type="button" data-mode="text">Type it</button>
-      </div>
-      <input type="text" id="custom-loc" maxlength="120" placeholder="Type a location…">
+    <div class="loc-toggle" id="loc-toggle">
+      <button data-mode="off" class="active">Off</button>
+      <button data-mode="gps">GPS</button>
+      <button data-mode="text">Type</button>
     </div>
+    <input type="text" id="custom-loc" placeholder="Type a location...">
+  </section>
 
-    <button id="notif-btn" type="button">🔔 Enable notifications</button>
-    <button id="send-btn" type="button">Send with love ♥</button>
-
+  <div class="actions">
+    <button id="notif-btn">Enable Notifications</button>
+    <button id="send-btn">Send</button>
   </div>
 </div>
 
+<!-- ============ RECEIVE VIEW ============ -->
 <div id="receive-view" class="hidden">
-  <div class="rx-bar">
-    <span id="rx-label">Something sweet arrived ♡</span>
-    <span>Kisses</span>
-  </div>
-  <div class="frame" aria-hidden="true">
-    <span>+</span><span>+</span><span>+</span><span>+</span>
-  </div>
-  <svg id="kiss-display" viewBox="0 0 24 24"><path id="kiss-path" fill="#C2410C" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+  <svg id="kiss-display" viewBox="0 0 24 24"><path id="kiss-path" fill="#C94060" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
   <div id="emoji-display">🤗</div>
   <div id="location-display"></div>
-  <button id="back-btn" type="button">Send another ♡</button>
+  <button id="back-btn">← Send Another</button>
 </div>
-
-<div id="app-toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot, query, orderBy, limit, where, documentId, serverTimestamp }
+import { getFirestore, collection, doc, setDoc, onSnapshot, query, orderBy, limit }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 const firebaseConfig = {
@@ -988,77 +700,26 @@ const firebaseConfig = {
 };
 
 const IMGBB_KEY = '9e30919b8718be370e22427d93a9060e';
-const GIPHY_KEY = 'vMggDD6nkMVZAOyf4okMRDnuj3z8Vet9';
-const ONESIGNAL_APP_ID = '6752ffdc-ebef-4aec-b9c7-ccb73f791cfd';
+const GIPHY_KEY = 'ΒΑΛΕ_ΕΔΩ_ΤΟ_GIPHY_KEY';
 const MAX_FILE_MB = 15;
-const FIRST_LOAD_GRACE_MS = 60000;
-const CHANNEL_STORAGE_KEY = 'kisses_private_channel_v1';
-const DEVICE_STORAGE_KEY = 'kisses_device_id_v1';
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 let selectedType = 'kiss';
-let selectedColor = '#C2410C';
+let selectedColor = '#C94060';
 let locMode = 'off';
 let selectedFile = null;
-let previewObjectUrl = null;
 let lastSendTime = 0;
 let lastShownDocId = null;
-let listenerStartedAt = Date.now();
-let unsubscribeSnapshot = null;
-let firstLoad = true;
-let toastTimer = null;
-
-function randomToken(length = 8) {
-  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  const bytes = new Uint8Array(length);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes, b => alphabet[b % alphabet.length]).join('');
-}
-
-function normalizeChannel(value) {
-  return String(value || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12);
-}
-
-function getStoredOrCreate(key, factory) {
-  try {
-    const existing = localStorage.getItem(key);
-    if (existing) return existing;
-    const value = factory();
-    localStorage.setItem(key, value);
-    return value;
-  } catch {
-    return factory();
-  }
-}
-
-const params = new URLSearchParams(location.search);
-const inviteCandidate = normalizeChannel(params.get('c'));
-const inviteChannel = inviteCandidate.length >= 4 ? inviteCandidate : '';
-const storedCandidate = normalizeChannel(getStoredOrCreate(CHANNEL_STORAGE_KEY, () => randomToken(6)));
-const storedChannel = storedCandidate.length >= 4 ? storedCandidate : randomToken(6);
-let activeChannel = inviteChannel || storedChannel;
-const deviceId = getStoredOrCreate(DEVICE_STORAGE_KEY, () => randomToken(16));
-const requestedKissId = params.get('kiss') || null;
-
-try { localStorage.setItem(CHANNEL_STORAGE_KEY, activeChannel); } catch {}
-
-// Consume invite channel parameters once. Keeping an old ?c= in the address bar
-// would otherwise override a channel the user sets later when the page reloads.
-if (inviteChannel) {
-  try {
-    const cleanUrl = new URL(location.href);
-    cleanUrl.searchParams.delete('c');
-    history.replaceState({}, '', cleanUrl);
-  } catch {}
-}
+let notifInitialized = false;
+let notifPending = false;
 
 const colors = [
-  '#C2410C','#DC2626','#D4A373','#365314','#92400E',
-  '#0000FF','#00BFFF','#00CED1','#00FF00','#008000',
-  '#FFD700','#FFA500','#FF8C00','#8B4513','#000000',
-  '#808080','#F5F5F5','#FFC0CB','#E6E6FA','#40E0D0'
+  '#C94060','#A82E4C','#E8607A','#F5A0B5','#F5D5DC',
+  '#E67E50','#F0A868','#D4A24C','#8B6F47','#2A1F1A',
+  '#6B5A4E','#8B7A6E','#B8A89A','#E8DDD1','#FDF8F3',
+  '#5C6B8A','#7A93B8','#A8C0D8','#6B8B7A','#A8C4B0'
 ];
 
 function escapeHtml(s) {
@@ -1067,134 +728,42 @@ function escapeHtml(s) {
   }[c]));
 }
 
-function showToast(message, kind = 'info') {
-  const toast = document.getElementById('app-toast');
-  toast.textContent = message;
-  toast.classList.toggle('error', kind === 'error');
-  toast.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => toast.classList.remove('show'), 2600);
-}
+// === Love burst animation ===
+function triggerLoveBurst(originEl) {
+  const emojis = ['💕', '💖', '💗', '💓', '❤️', '💝', '💘'];
+  const rect = originEl.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
 
-function withOneSignal(fn, timeoutMs = 8000) {
-  return new Promise((resolve, reject) => {
-    let settled = false;
-    const timer = setTimeout(() => {
-      if (settled) return;
-      settled = true;
-      reject(new Error('OneSignal SDK unavailable'));
-    }, timeoutMs);
+  originEl.classList.remove('bursting');
+  void originEl.offsetWidth;
+  originEl.classList.add('bursting');
 
-    window.OneSignalDeferred = window.OneSignalDeferred || [];
-    window.OneSignalDeferred.push(async OneSignal => {
-      if (settled) return;
-      try {
-        const result = await fn(OneSignal);
-        if (settled) return;
-        settled = true;
-        clearTimeout(timer);
-        resolve(result);
-      } catch (err) {
-        if (settled) return;
-        settled = true;
-        clearTimeout(timer);
-        reject(err);
-      }
-    });
-  });
-}
+  const count = 14;
+  for (let i = 0; i < count; i++) {
+    const heart = document.createElement('div');
+    heart.className = 'burst-heart';
+    heart.textContent = emojis[Math.floor(Math.random() * emojis.length)];
 
-async function syncOneSignalChannel() {
-  try {
-    await withOneSignal(async OneSignal => {
-      await OneSignal.login(deviceId);
-      await OneSignal.User.addTags({
-        kiss_channel: activeChannel,
-        kiss_device: deviceId
-      });
-    });
-  } catch (err) {
-    console.warn('OneSignal tag sync failed:', err);
+    const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.6;
+    const distance = 100 + Math.random() * 120;
+    const tx = Math.cos(angle) * distance;
+    const ty = Math.sin(angle) * distance - 40;
+    const rot = (Math.random() - 0.5) * 360;
+
+    heart.style.left = cx + 'px';
+    heart.style.top = cy + 'px';
+    heart.style.setProperty('--tx', tx + 'px');
+    heart.style.setProperty('--ty', ty + 'px');
+    heart.style.setProperty('--rot', rot + 'deg');
+    heart.style.animationDelay = (Math.random() * 0.15) + 's';
+    heart.style.fontSize = (20 + Math.random() * 16) + 'px';
+
+    document.body.appendChild(heart);
+
+    setTimeout(() => heart.remove(), 1500);
   }
 }
-
-function buildInviteUrl(kissId = '', channel = activeChannel) {
-  const url = new URL(location.href);
-  url.search = '';
-  url.searchParams.set('c', channel);
-  if (kissId) url.searchParams.set('kiss', kissId);
-  url.hash = '';
-  return url.toString();
-}
-
-function makeKissDocId(now = Date.now(), channel = activeChannel) {
-  return `${channel}_${String(now).padStart(13, '0')}_${randomToken(6)}`;
-}
-
-function updateChannelUI() {
-  document.getElementById('channel-code').value = activeChannel;
-}
-
-async function applyChannel(value, { quiet = false } = {}) {
-  const normalized = normalizeChannel(value);
-  if (normalized.length < 4) {
-    showToast('Channel code must be at least 4 characters.', 'error');
-    updateChannelUI();
-    return false;
-  }
-  if (normalized === activeChannel) {
-    if (!quiet) showToast(`Channel ${activeChannel} is active.`);
-    return true;
-  }
-
-  activeChannel = normalized;
-  try { localStorage.setItem(CHANNEL_STORAGE_KEY, activeChannel); } catch {}
-  lastShownDocId = null;
-  firstLoad = true;
-  listenerStartedAt = Date.now();
-  updateChannelUI();
-  startListener();
-  await syncOneSignalChannel();
-  if (!quiet) showToast(`Joined private channel ${activeChannel}.`);
-  return true;
-}
-
-updateChannelUI();
-
-document.getElementById('channel-set').addEventListener('click', () => {
-  applyChannel(document.getElementById('channel-code').value);
-});
-document.getElementById('channel-code').addEventListener('keydown', e => {
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    document.getElementById('channel-set').click();
-  }
-});
-document.getElementById('channel-code').addEventListener('input', e => {
-  const clean = normalizeChannel(e.target.value);
-  if (e.target.value !== clean) e.target.value = clean;
-});
-document.getElementById('channel-share').addEventListener('click', async () => {
-  const inviteUrl = buildInviteUrl();
-  try {
-    await navigator.clipboard.writeText(inviteUrl);
-    showToast('Invite link copied.');
-  } catch {
-    try {
-      const input = document.createElement('textarea');
-      input.value = inviteUrl;
-      input.style.position = 'fixed';
-      input.style.opacity = '0';
-      document.body.appendChild(input);
-      input.select();
-      document.execCommand('copy');
-      input.remove();
-      showToast('Invite link copied.');
-    } catch {
-      showToast(`Share channel code: ${activeChannel}`);
-    }
-  }
-});
 
 // === Canvas ===
 const canvas = document.getElementById('draw-canvas');
@@ -1206,12 +775,13 @@ ctx.lineCap = 'round';
 ctx.lineJoin = 'round';
 ctx.strokeStyle = selectedColor;
 
-// === Colors ===
+// === Color dots ===
 const colorRow = document.getElementById('color-row');
 colors.forEach(c => {
   const dot = document.createElement('div');
   dot.className = 'color-dot' + (c === selectedColor ? ' selected' : '');
   dot.style.background = c;
+  if (c === '#FDF8F3') dot.style.border = '1.5px solid #E8DDD1';
   dot.onclick = () => {
     selectedColor = c;
     document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('selected'));
@@ -1248,19 +818,23 @@ function updatePreview() {
   const emoji = document.getElementById('preview-emoji');
   const cv = document.getElementById('draw-canvas');
 
-  svg.style.display = 'none';
-  emoji.style.display = 'none';
-  cv.style.display = 'none';
-
   if (selectedType === 'kiss') {
     svg.style.display = 'block';
+    emoji.style.display = 'none';
+    cv.style.display = 'none';
   } else if (selectedType === 'hug') {
+    svg.style.display = 'none';
     emoji.style.display = 'block';
     emoji.textContent = '🤗';
+    cv.style.display = 'none';
   } else if (selectedType === 'papoi') {
+    svg.style.display = 'none';
     emoji.style.display = 'block';
     emoji.textContent = '🍌';
+    cv.style.display = 'none';
   } else {
+    svg.style.display = 'none';
+    emoji.style.display = 'none';
     cv.style.display = 'block';
   }
 }
@@ -1314,50 +888,21 @@ document.getElementById('loc-toggle').addEventListener('click', e => {
 });
 
 // === Photo ===
-const fileInput = document.getElementById('file-input');
-const previewImg = document.getElementById('preview-img');
-
-function clearSelectedFile() {
-  selectedFile = null;
-  fileInput.value = '';
-  previewImg.classList.remove('show');
-  previewImg.removeAttribute('src');
-  if (previewObjectUrl) {
-    URL.revokeObjectURL(previewObjectUrl);
-    previewObjectUrl = null;
-  }
-}
-
-fileInput.addEventListener('change', e => {
-  const file = e.target.files[0] || null;
-
-  if (previewObjectUrl) {
-    URL.revokeObjectURL(previewObjectUrl);
-    previewObjectUrl = null;
-  }
-
-  if (!file) {
-    clearSelectedFile();
-    return;
-  }
-
-  if (!file.type.startsWith('image/')) {
-    showToast('Please choose an image or GIF.', 'error');
-    clearSelectedFile();
-    return;
-  }
-
-  if (file.size > MAX_FILE_MB * 1024 * 1024) {
-    showToast(`Photo too big — max ${MAX_FILE_MB}MB.`, 'error');
-    clearSelectedFile();
-    return;
-  }
-
-  selectedFile = file;
-  previewObjectUrl = URL.createObjectURL(file);
-  previewImg.src = previewObjectUrl;
-  previewImg.classList.add('show');
-  clearCanvas();
+document.getElementById('file-input').addEventListener('change', e => {
+  selectedFile = e.target.files[0] || null;
+  const preview = document.getElementById('preview-img');
+  if (selectedFile) {
+    if (selectedFile.size > MAX_FILE_MB * 1024 * 1024) {
+      alert(`Photo too big (max ${MAX_FILE_MB}MB). Choose a smaller one.`);
+      selectedFile = null;
+      e.target.value = '';
+      preview.classList.remove('show');
+      return;
+    }
+    preview.src = URL.createObjectURL(selectedFile);
+    preview.classList.add('show');
+    clearCanvas();
+  } else preview.classList.remove('show');
 });
 
 // === Helpers ===
@@ -1397,233 +942,114 @@ async function fetchRandomMinionGif() {
   } catch { return null; }
 }
 
-async function sendOneSignalNotification(type, kissId, channel = activeChannel) {
-  let body = 'A kiss for you 💋';
-  if (type === 'hug') body = 'A hug for you 🤗';
-  else if (type === 'papoi') body = 'Papoi! 🍌';
-  else if (type === 'draw') body = 'A drawing! ✏️';
-
-  try {
-    const res = await fetchWithTimeout('https://late-unit-7337.asiskatas.workers.dev', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        app_id: ONESIGNAL_APP_ID,
-        target_channel: 'push',
-        // Scope pushes to this private channel and explicitly exclude the sender.
-        filters: [
-          { field: 'tag', key: 'kiss_channel', relation: '=', value: channel },
-          { field: 'tag', key: 'kiss_device', relation: '!=', value: deviceId }
-        ],
-        headings: { en: 'Kisses 💋' },
-        contents: { en: body },
-        data: { channel, kissId, senderDeviceId: deviceId },
-        url: buildInviteUrl(kissId, channel),
-        chrome_web_icon: new URL('icon.png', location.href).href
-      })
-    }, 12000);
-
-    if (!res.ok) {
-      console.warn('OneSignal proxy HTTP error:', res.status);
-      return false;
-    }
-    const result = await res.json().catch(() => ({}));
-    console.log('OneSignal proxy result:', result);
-    return true;
-  } catch (err) {
-    console.warn('OneSignal proxy failed:', err);
-    return false;
-  }
-}
-
 // === Send ===
-const controlsEl = document.querySelector('.controls');
-function setComposerBusy(busy) {
-  controlsEl.classList.toggle('is-sending', busy);
-  controlsEl.setAttribute('aria-busy', busy ? 'true' : 'false');
-  controlsEl.querySelectorAll('button, input').forEach(el => { el.disabled = busy; });
-}
-
 document.getElementById('send-btn').addEventListener('click', async () => {
   const now = Date.now();
   if (now - lastSendTime < 1000) return;
   lastSendTime = now;
 
   const sendBtn = document.getElementById('send-btn');
-  const sendType = selectedType;
-  const sendColor = selectedColor;
-  const sendChannel = activeChannel;
-  const sendLocMode = locMode;
-  const sendLocationText = document.getElementById('custom-loc').value.trim();
-  const sendFile = selectedFile;
-  const sendDrawing = sendType === 'draw' && !isCanvasEmpty()
-    ? canvas.toDataURL('image/png').split(',')[1]
-    : null;
+  sendBtn.disabled = true;
+  sendBtn.textContent = 'Sending';
 
-  setComposerBusy(true);
-  sendBtn.textContent = 'Sending…';
+  // 🎉 LOVE BURST
+  triggerLoveBurst(sendBtn);
 
   try {
     let location = null;
-    if (sendLocMode === 'gps') {
+    if (locMode === 'gps') {
       try {
         const pos = await new Promise((res, rej) =>
           navigator.geolocation.getCurrentPosition(res, rej, { timeout: 5000 })
         );
         location = { type: 'gps', lat: pos.coords.latitude, lon: pos.coords.longitude };
-      } catch (err) {
-        console.warn('Location unavailable:', err);
-        showToast('Location unavailable — sending without it.');
-      }
-    } else if (sendLocMode === 'text') {
-      if (sendLocationText) location = { type: 'text', label: sendLocationText };
+      } catch {}
+    } else if (locMode === 'text') {
+      const text = document.getElementById('custom-loc').value.trim();
+      if (text) location = { type: 'text', label: text };
     }
 
-    // Priority: the selected tab wins over a leftover photo.
-    // (Previously a stale photo could hijack PAPOI / DRAW.)
     let mediaUrl = null;
-    if (sendType === 'papoi') {
-      mediaUrl = await fetchRandomMinionGif();
-    } else if (sendType === 'draw') {
-      if (sendDrawing) {
-        const fd = new FormData();
-        fd.append('image', sendDrawing);
-        mediaUrl = await uploadToImgBB(fd);
-        if (!mediaUrl) throw new Error('MEDIA_UPLOAD_FAILED');
-      }
-    } else if (sendFile) {
+    if (selectedFile) {
       const fd = new FormData();
-      fd.append('image', sendFile);
+      fd.append('image', selectedFile);
       mediaUrl = await uploadToImgBB(fd);
-      if (!mediaUrl) throw new Error('MEDIA_UPLOAD_FAILED');
+    } else if (selectedType === 'papoi') {
+      mediaUrl = await fetchRandomMinionGif();
+    } else if (selectedType === 'draw' && !isCanvasEmpty()) {
+      const base64 = canvas.toDataURL('image/png').split(',')[1];
+      const fd = new FormData();
+      fd.append('image', base64);
+      mediaUrl = await uploadToImgBB(fd);
     }
 
     const kissData = {
-      type: sendType,
-      color: sendColor,
+      type: selectedType,
+      color: selectedColor,
       location,
       mediaUrl,
-      channel: sendChannel,
-      senderDeviceId: deviceId,
-      time: now,
-      createdAt: serverTimestamp()
+      time: now
     };
 
-    const kissId = makeKissDocId(now, sendChannel);
-    const docRef = doc(db, 'kisses', kissId);
-    // Set before the write so the local Firestore listener never double-renders our own send.
-    lastShownDocId = kissId;
+    const docRef = doc(collection(db, 'kisses'));
+    lastShownDocId = docRef.id;
     await setDoc(docRef, kissData);
 
-    // Sending the push should not block the UI; Firestore is the source of truth.
-    sendOneSignalNotification(sendType, kissId, sendChannel).then(ok => {
-      if (!ok) showToast('Sent, but the push notification failed.', 'error');
-    });
-
-    clearSelectedFile();
+    selectedFile = null;
+    document.getElementById('file-input').value = '';
+    document.getElementById('preview-img').classList.remove('show');
     document.getElementById('custom-loc').value = '';
     clearCanvas();
 
-    showReceive(kissData, 'sent');
+    showReceive(kissData);
   } catch (err) {
     console.error('Send failed:', err);
-    if (err?.message === 'MEDIA_UPLOAD_FAILED') {
-      showToast('Media upload failed — nothing was sent.', 'error');
-    } else {
-      showToast('Send failed — check your connection.', 'error');
-    }
+    alert('Send failed. Check internet.');
   } finally {
-    setComposerBusy(false);
-    sendBtn.textContent = 'Send with love ♥';
+    sendBtn.disabled = false;
+    sendBtn.textContent = 'Send';
   }
 });
 
 // === Receive ===
-function showReceive(k, context = 'received') {
-  const type = (k && k.type) ? k.type : 'kiss';
-
-  document.getElementById('rx-label').textContent = context === 'sent'
-    ? 'Sent with love ♡'
-    : (type === 'hug' ? 'A hug for you ♡' :
-       type === 'papoi' ? 'A little surprise for you ♡' :
-       type === 'draw' ? 'A drawing for you ♡' : 'A kiss for you ♡');
-
+function showReceive(k) {
   document.getElementById('send-view').classList.add('hidden');
   document.getElementById('receive-view').classList.remove('hidden');
 
   const svg = document.getElementById('kiss-display');
   const emoji = document.getElementById('emoji-display');
-  const locDisplay = document.getElementById('location-display');
-
   svg.classList.remove('bounce');
   emoji.classList.remove('bounce');
-  svg.style.display = 'none';
-  emoji.style.display = 'none';
-
-  const fallbackEmoji =
-    type === 'hug'   ? '🤗' :
-    type === 'papoi' ? '🍌' :
-    type === 'draw'  ? '✏️' : null;
-
-  const showFallbackGraphic = () => {
-    if (fallbackEmoji) {
-      emoji.style.display = 'block';
-      emoji.textContent = fallbackEmoji;
-      void emoji.offsetWidth;
-      emoji.classList.add('bounce');
-    } else {
-      svg.style.display = 'block';
-      document.getElementById('kiss-path').setAttribute('fill', k.color || '#C2410C');
-      void svg.offsetWidth;
-      svg.classList.add('bounce');
-    }
-  };
-
-  // If there's a media URL, the graphic lives inside #location-display.
-  // If there isn't, show the type-appropriate fallback graphic.
-  if (!k.mediaUrl) showFallbackGraphic();
-
-  let html = '';
-  const loc = k.location;
-  if (loc && typeof loc === 'object') {
-    if (loc.type === 'gps' && Number.isFinite(loc.lat) && Number.isFinite(loc.lon) && Math.abs(loc.lat) <= 90 && Math.abs(loc.lon) <= 180) {
-      html += `<a href="https://maps.google.com/?q=${loc.lat},${loc.lon}" target="_blank" rel="noopener">📍 ${loc.lat.toFixed(3)}, ${loc.lon.toFixed(3)}</a>`;
-    } else if (loc.type === 'text' && loc.label) {
-      html += `📍 ${escapeHtml(loc.label)}`;
-    }
-  }
-
-  const fallbackText =
-    type === 'hug'   ? '🤗 A hug for you' :
-    type === 'papoi' ? '🍌 Papoi!' :
-    type === 'draw'  ? '✏️ A drawing for you' : '💕';
-
-  locDisplay.innerHTML = html || (!k.mediaUrl ? fallbackText : '');
 
   if (k.mediaUrl) {
-    let media;
-    try {
-      const mediaUrl = new URL(k.mediaUrl, location.href);
-      if (mediaUrl.protocol !== 'https:') throw new Error('Unsupported media protocol');
-      media = document.createElement('img');
-      media.src = mediaUrl.href;
-      media.alt = type === 'draw' ? 'Received drawing' : 'Received image';
-      media.loading = 'eager';
-      locDisplay.appendChild(media);
-    } catch (err) {
-      console.warn('Invalid media URL:', err);
-      showFallbackGraphic();
-      if (!locDisplay.textContent.trim()) locDisplay.textContent = '⚠️ MEDIA UNAVAILABLE';
-    }
+    svg.style.display = 'none';
+    emoji.style.display = 'none';
+  } else if (k.type === 'hug') {
+    svg.style.display = 'none';
+    emoji.style.display = 'block';
+    emoji.textContent = '🤗';
+    void emoji.offsetWidth;
+    emoji.classList.add('bounce');
+  } else {
+    svg.style.display = 'block';
+    emoji.style.display = 'none';
+    document.getElementById('kiss-path').setAttribute('fill', k.color || '#C94060');
+    void svg.offsetWidth;
+    svg.classList.add('bounce');
+  }
 
-    if (media) {
-      media.addEventListener('error', () => {
-        media.remove();
-        showFallbackGraphic();
-        if (!locDisplay.textContent.trim()) locDisplay.textContent = '⚠️ MEDIA UNAVAILABLE';
-      });
+  let html = '';
+  if (k.location) {
+    if (k.location.type === 'gps') {
+      html += `<a href="https://maps.google.com/?q=${k.location.lat},${k.location.lon}" target="_blank" rel="noopener">📍 ${k.location.lat.toFixed(3)}, ${k.location.lon.toFixed(3)}</a>`;
+    } else if (k.location.type === 'text') {
+      html += `📍 ${escapeHtml(k.location.label)}`;
     }
   }
+  if (k.mediaUrl) {
+    html += `<img src="${escapeHtml(k.mediaUrl)}" alt="" onerror="this.style.display='none'">`;
+  }
+  document.getElementById('location-display').innerHTML = html || (k.type === 'hug' ? 'A hug for you 🤗' : '');
 }
 
 document.getElementById('back-btn').addEventListener('click', () => {
@@ -1632,186 +1058,54 @@ document.getElementById('back-btn').addEventListener('click', () => {
 });
 
 // === Firestore listener ===
-function startListener({ useGrace = true } = {}) {
-  if (unsubscribeSnapshot) {
-    try { unsubscribeSnapshot(); } catch {}
-    unsubscribeSnapshot = null;
-  }
+let firstLoad = true;
+let unsubscribeSnapshot = null;
 
-  const lower = `${activeChannel}_`;
-  const upper = `${activeChannel}_\uf8ff`;
-  const q = query(
-    collection(db, 'kisses'),
-    where(documentId(), '>=', lower),
-    where(documentId(), '<=', upper),
-    orderBy(documentId(), 'desc'),
-    limit(1)
-  );
-
-  const thisChannel = activeChannel;
-  listenerStartedAt = Date.now();
-  firstLoad = useGrace;
-
+function startListener() {
+  const q = query(collection(db, 'kisses'), orderBy('time', 'desc'), limit(1));
   unsubscribeSnapshot = onSnapshot(q,
     snap => {
-      if (thisChannel !== activeChannel) return;
-      const wasFirstLoad = firstLoad;
-
       snap.forEach(d => {
         if (d.id === lastShownDocId) return;
-
-        const data = d.data();
-        if (data.channel !== activeChannel) return;
-        if (data.senderDeviceId === deviceId) {
-          lastShownDocId = d.id;
-          return;
-        }
-
-        if (wasFirstLoad) {
-          const t = typeof data.time === 'number' ? data.time : 0;
-          if (!t || listenerStartedAt - t > FIRST_LOAD_GRACE_MS) return;
-        }
-
+        showReceive(d.data());
         lastShownDocId = d.id;
-        showReceive(data);
       });
-
       firstLoad = false;
     },
     err => {
-      console.error('Snapshot error:', err);
-      if (thisChannel !== activeChannel) return;
+      console.error('Snapshot error, retrying in 3s:', err);
       if (unsubscribeSnapshot) { try { unsubscribeSnapshot(); } catch {} }
-      unsubscribeSnapshot = null;
-      firstLoad = false;
-      setTimeout(() => {
-        if (thisChannel === activeChannel) startListener({ useGrace: false });
-      }, 3000);
+      setTimeout(startListener, 3000);
     }
   );
 }
-
-async function openKissById(kissId, expectedChannel = activeChannel) {
-  if (!kissId) return false;
-  try {
-    const normalizedChannel = normalizeChannel(expectedChannel);
-    if (normalizedChannel && !String(kissId).startsWith(`${normalizedChannel}_`)) return false;
-    if (normalizedChannel && normalizedChannel !== activeChannel) {
-      await applyChannel(normalizedChannel, { quiet: true });
-    }
-
-    const ref = doc(db, 'kisses', kissId);
-    const snap = await getDoc(ref);
-    if (!snap.exists()) return false;
-    const data = snap.data();
-    if (data.channel !== activeChannel) return false;
-    lastShownDocId = snap.id;
-    showReceive(data);
-    return true;
-  } catch (err) {
-    console.warn('Could not open notification item:', err);
-    return false;
-  }
-}
-
-async function openRequestedKiss() {
-  if (!requestedKissId) return;
-  const opened = await openKissById(requestedKissId, activeChannel);
-  if (opened) {
-    const cleanUrl = new URL(location.href);
-    cleanUrl.searchParams.delete('kiss');
-    history.replaceState({}, '', cleanUrl);
-  }
-}
-
-async function handleNotificationClick(payload) {
-  const data = payload?.data || {};
-  let kissId = data.kissId || '';
-  let channel = normalizeChannel(data.channel);
-
-  if ((!kissId || !channel) && payload?.launchUrl) {
-    try {
-      const url = new URL(payload.launchUrl, location.href);
-      kissId ||= url.searchParams.get('kiss') || '';
-      channel ||= normalizeChannel(url.searchParams.get('c'));
-    } catch {}
-  }
-
-  if (kissId) await openKissById(kissId, channel || activeChannel);
-}
-
-window.addEventListener('kisses-notification-click', event => {
-  handleNotificationClick(event.detail);
-});
-if (window.__pendingKissNotification) {
-  const pending = window.__pendingKissNotification;
-  window.__pendingKissNotification = null;
-  handleNotificationClick(pending);
-}
-
 startListener();
-syncOneSignalChannel();
-openRequestedKiss();
 
-// === OneSignal permission button ===
-function setNotificationButtonState(permission, optedIn = false) {
-  const btn = document.getElementById('notif-btn');
-  const active = Boolean(permission && optedIn);
-  btn.classList.toggle('on', active);
-  btn.textContent = active ? '🔔 Notifications on' : '🔔 Enable notifications';
-}
-
-async function refreshNotificationState() {
-  try {
-    await withOneSignal(async OneSignal => {
-      await OneSignal.login(deviceId);
-      const permission = Boolean(OneSignal.Notifications.permission);
-      const optedIn = Boolean(OneSignal.User?.PushSubscription?.optedIn);
-      setNotificationButtonState(permission, optedIn);
-      await OneSignal.User.addTags({ kiss_channel: activeChannel, kiss_device: deviceId });
-    });
-  } catch (err) {
-    console.warn('Notification state unavailable:', err);
-  }
-}
-
+// === Notifications ===
 document.getElementById('notif-btn').addEventListener('click', async () => {
+  if (notifInitialized || notifPending) return;
+  notifPending = true;
   const btn = document.getElementById('notif-btn');
-  if (btn.dataset.busy === '1') return;
-  btn.dataset.busy = '1';
-  btn.textContent = '🔔 One sec…';
+  btn.textContent = 'Working...';
 
   try {
-    await withOneSignal(async OneSignal => {
-      await OneSignal.login(deviceId);
-      if (!OneSignal.Notifications.permission) {
-        await OneSignal.Notifications.requestPermission();
+    await window.OneSignalDeferred.push(async function(OneSignal) {
+      await OneSignal.Notifications.requestPermission();
+      const granted = OneSignal.Notifications.permission;
+      if (granted) {
+        btn.textContent = 'Notifications On';
+        btn.classList.add('on');
+        notifInitialized = true;
+      } else {
+        btn.textContent = 'Tap to Retry';
       }
-      if (OneSignal.Notifications.permission && !OneSignal.User.PushSubscription.optedIn) {
-        await OneSignal.User.PushSubscription.optIn();
-      }
-      await OneSignal.User.addTags({ kiss_channel: activeChannel, kiss_device: deviceId });
-
-      const permission = Boolean(OneSignal.Notifications.permission);
-      const optedIn = Boolean(OneSignal.User.PushSubscription.optedIn);
-      setNotificationButtonState(permission, optedIn);
-      showToast(permission && optedIn ? 'Notifications enabled for this channel.' : 'Notifications are blocked in browser settings.');
     });
   } catch (err) {
     console.error('Notify failed:', err);
-    setNotificationButtonState(false, false);
-    showToast('Could not enable notifications.', 'error');
+    btn.textContent = 'Tap to Retry';
   } finally {
-    btn.dataset.busy = '0';
+    notifPending = false;
   }
-});
-
-refreshNotificationState();
-window.addEventListener('pageshow', refreshNotificationState);
-window.addEventListener('kisses-notification-state-change', refreshNotificationState);
-window.addEventListener('beforeunload', () => {
-  if (previewObjectUrl) URL.revokeObjectURL(previewObjectUrl);
-  if (unsubscribeSnapshot) { try { unsubscribeSnapshot(); } catch {} }
 });
 </script>
 
