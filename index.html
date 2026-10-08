@@ -2,15 +2,17 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">
-<meta name="theme-color" content="#FDF8F3">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f2e8d5">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>Ηλία ρίχτο 💋</title>
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="description" content="Send a kiss, a hug, a papoi or a drawing.">
+<title>Ηλία ρίχτο</title>
 <link rel="manifest" href="/manifest.json">
-<link rel="apple-touch-icon" href="/icon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@500;700;800&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,700;0,7..72,900;1,7..72,700&family=Commissioner:wght@900&family=Roboto+Mono:wght@700&family=Courier+Prime:wght@400;700&family=Permanent+Marker&display=swap" rel="stylesheet">
 
 <!-- OneSignal -->
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
@@ -27,670 +29,709 @@
 </script>
 
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-
   :root {
-    --ink: #2A1F1A;
-    --ink-soft: #6B5A4E;
-    --cream: #FDF8F3;
-    --cream-deep: #F5EBE0;
-    --rose: #C94060;
-    --rose-deep: #A82E4C;
-    --hairline: #E8DDD1;
-    --pad-x: clamp(16px, 5vw, 24px);
+    --cream: #f2e8d5;
+    --paper: #faf3e3;
+    --kraft: #d9c9a3;
+    --tomato: #e04a2a;
+    --pool: #2e7fa4;
+    --ink: #1b1512;
+    --ink-soft: #5c4f45;
+    --banana: #f2c230;
+    --tape: rgba(217, 201, 163, .78);
+
+    --serif: 'Literata', Georgia, serif;
+    --marker: 'Permanent Marker', 'Comic Sans MS', cursive;
+    --mono: 'Courier Prime', 'Courier New', monospace;
+
+    --r-sm: 4px;
+    --r-md: 8px;
+    --r-lg: 16px;
+    --pad: clamp(16px, 5vw, 24px);
+
+    /* paper sits on paper: hard offset + soft contact shadow */
+    --lift: 0 1px 0 rgba(27,21,18,.08), 0 6px 14px -6px rgba(27,21,18,.35);
+    --lift-hi: 0 1px 0 rgba(27,21,18,.08), 0 14px 24px -10px rgba(27,21,18,.45);
+    --spring: cubic-bezier(.34, 1.56, .64, 1);
   }
 
-  html {
-    height: 100%;
-    overflow: hidden;
-  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
 
   body {
-    height: 100%;
-    height: 100dvh;
     min-height: 100dvh;
-    margin: 0;
-    overflow: hidden;
-    overscroll-behavior: none;
-    background: var(--cream);
+    background-color: var(--cream);
+    /* paper grain */
+    background-image:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .1 0 0 0 0 .08 0 0 0 0 .06 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
     color: var(--ink);
-    font-family: 'Inter Tight', -apple-system, system-ui, sans-serif;
-    font-weight: 400;
-    -webkit-tap-highlight-color: transparent;
+    font-family: var(--serif);
+    font-size: 16px;
+    line-height: 1.5;
+    overscroll-behavior: none;
+  }
+
+  button, input { font: inherit; color: inherit; }
+  button { cursor: pointer; background: none; border: 0; }
+  :focus-visible { outline: 3px solid var(--pool); outline-offset: 3px; }
+  svg { display: block; }
+  .hidden { display: none !important; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  /* ========= shared paper bits ========= */
+  .tape {
+    position: absolute;
+    width: 74px; height: 22px;
+    background: var(--tape);
+    mix-blend-mode: multiply;
+    clip-path: polygon(3% 0, 97% 4%, 100% 30%, 96% 55%, 100% 100%, 2% 96%, 0 60%, 4% 35%);
+    pointer-events: none;
+    z-index: 3;
   }
 
   /* ========= SEND VIEW ========= */
   #send-view {
-    width: 100%;
-    height: 100dvh;
+    max-width: 480px;
+    margin: 0 auto;
+    min-height: 100dvh;
     display: flex;
     flex-direction: column;
-    overflow-y: auto;
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
-    padding-top: max(14px, env(safe-area-inset-top));
-    padding-bottom: max(14px, env(safe-area-inset-bottom));
-    padding-left: env(safe-area-inset-left);
-    padding-right: env(safe-area-inset-right);
+    padding: max(14px, env(safe-area-inset-top)) 0 max(14px, env(safe-area-inset-bottom));
   }
 
-  /* Topbar */
-  .topbar {
-    padding: 10px var(--pad-x) 18px;
-    flex-shrink: 0;
-  }
-
+  /* Ransom-note brand: the one loud thing */
   .brand {
-    font-family: 'Cabinet Grotesk', sans-serif;
-    font-size: clamp(22px, 6vw, 26px);
-    font-weight: 800;
-    color: var(--ink);
-    letter-spacing: -0.8px;
-    line-height: 1.1;
+    padding: 14px var(--pad) 22px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 3px;
+    line-height: 1;
+  }
+  .brand .gap { width: 12px; }
+  .brand .ch {
+    display: inline-block;
+    padding: 6px 7px 7px;
+    font-size: clamp(26px, 8vw, 34px);
+    box-shadow: var(--lift);
+    transform: rotate(var(--r, 0deg)) translateY(var(--y, 0));
+    animation: drop .55s var(--spring) both;
+    animation-delay: calc(var(--i) * 45ms);
+  }
+  .brand .dot {
+    width: 16px; height: 16px; border-radius: 50%;
+    background: var(--tomato);
+    margin-left: 4px;
+    box-shadow: var(--lift);
+    animation: drop .55s var(--spring) both;
+    animation-delay: 520ms;
+  }
+  @keyframes drop {
+    from { opacity: 0; transform: translateY(-14px) rotate(calc(var(--r, 0deg) * -3)) scale(1.15); }
   }
 
-  .brand .accent {
-    color: var(--rose);
-  }
-
-  /* Tabs */
+  /* ---- type tabs: four paper scraps ---- */
   .tabs {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 6px;
-    padding: 0 var(--pad-x) 16px;
-    flex-shrink: 0;
+    gap: 10px;
+    padding: 0 var(--pad) 22px;
   }
-
   .tab {
-    padding: 12px 4px;
-    background: transparent;
-    border: 1.5px solid var(--hairline);
-    border-radius: 14px;
-    color: var(--ink-soft);
-    font-family: inherit;
-    font-size: clamp(11px, 3vw, 12px);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
-    min-width: 0;
-  }
-
-  .tab-emoji {
-    font-size: clamp(20px, 5.5vw, 22px);
-    line-height: 1;
-    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-
-  .tab.active {
-    border-color: var(--rose);
-    background: var(--rose);
-    color: white;
-    transform: translateY(-2px);
-  }
-
-  .tab.active .tab-emoji {
-    transform: scale(1.2) rotate(-8deg);
-  }
-
-  .tab:active {
-    transform: scale(0.95);
-  }
-
-  /* Preview */
-  .preview {
-    margin: 0 var(--pad-x) 18px;
-    height: clamp(150px, 42vw, 190px);
-    background: var(--cream-deep);
-    border-radius: 28px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    position: relative;
-    overflow: hidden;
-    flex-shrink: 0;
-  }
-
-  .preview::before {
-    content: '';
-    position: absolute;
-    top: -40%;
-    left: -20%;
-    width: 60%;
-    height: 180%;
-    background: radial-gradient(circle, rgba(201,64,96,0.12), transparent 70%);
-    pointer-events: none;
-  }
-
-  .preview::after {
-    content: '';
-    position: absolute;
-    bottom: -30%;
-    right: -10%;
-    width: 50%;
-    height: 140%;
-    background: radial-gradient(circle, rgba(201,64,96,0.08), transparent 70%);
-    pointer-events: none;
-  }
-
-  #preview-icon {
-    width: clamp(80px, 24vw, 100px);
-    height: clamp(80px, 24vw, 100px);
-    position: relative;
-    z-index: 1;
-    filter: drop-shadow(0 6px 16px rgba(201,64,96,0.25));
-  }
-
-  #preview-emoji {
-    font-size: clamp(70px, 22vw, 90px);
-    line-height: 1;
-    position: relative;
-    z-index: 1;
-    filter: drop-shadow(0 6px 16px rgba(201,64,96,0.25));
-  }
-
-  #draw-canvas {
-    width: 88%;
-    max-width: 340px;
-    aspect-ratio: 600 / 280;
-    height: auto;
-    background: white;
-    border-radius: 16px;
-    touch-action: none;
-    cursor: crosshair;
-    display: none;
-    position: relative;
-    z-index: 1;
-    box-shadow: 0 2px 8px rgba(42,31,26,0.06);
-  }
-
-  /* Sections */
-  .section {
-    padding: 0 var(--pad-x) 16px;
-    flex-shrink: 0;
-  }
-
-  .section-head {
-    display: flex;
-    align-items: baseline;
-    gap: 12px;
-    margin-bottom: 10px;
-  }
-
-  .section-label {
-    font-family: 'Cabinet Grotesk', sans-serif;
-    font-size: clamp(14px, 4vw, 15px);
+    gap: 6px;
+    padding: 12px 4px 10px;
+    background: var(--paper);
+    border-radius: var(--r-sm);
+    box-shadow: var(--lift);
+    font-family: var(--mono);
     font-weight: 700;
-    color: var(--ink);
-    letter-spacing: -0.2px;
-  }
-
-  .section-hint {
-    font-size: 11px;
-    font-weight: 500;
-    color: var(--ink-soft);
-    letter-spacing: 0.02em;
-  }
-
-  /* Color grid */
-  .color-grid {
-    display: grid;
-    grid-template-columns: repeat(10, 1fr);
-    gap: clamp(4px, 1.2vw, 6px);
-  }
-
-  .color-dot {
-    width: 100%;
-    aspect-ratio: 1;
-    border-radius: 50%;
-    cursor: pointer;
-    transition: all 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
-    border: 1.5px solid transparent;
-  }
-
-  .color-dot.selected {
-    border-color: var(--ink);
-    transform: scale(1.15);
-    box-shadow: 0 0 0 2px var(--cream), 0 0 0 4px var(--rose);
-  }
-
-  #custom-color {
-    width: 100%;
-    height: 36px;
-    border: 1.5px solid var(--hairline);
-    border-radius: 12px;
-    cursor: pointer;
-    background: white;
-    margin-top: 10px;
-    padding: 2px;
-  }
-
-  #custom-color::-webkit-color-swatch-wrapper { padding: 0; }
-  #custom-color::-webkit-color-swatch { border: none; border-radius: 9px; }
-  #custom-color::-moz-color-swatch { border: none; border-radius: 9px; }
-
-  /* Photo */
-  .photo-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .media-btn {
-    flex: 1;
-    padding: 13px 18px;
-    background: white;
-    border: 1.5px solid var(--hairline);
-    border-radius: 14px;
-    color: var(--ink);
-    font-family: inherit;
     font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.15s;
-    text-align: left;
+    color: var(--ink-soft);
+    transform: rotate(var(--r, 0deg));
+    transition: transform .25s var(--spring), background-color .2s, color .2s, box-shadow .2s;
+  }
+  .tab:nth-child(1) { --r: -2deg; }
+  .tab:nth-child(2) { --r: 1.5deg; }
+  .tab:nth-child(3) { --r: -1deg; }
+  .tab:nth-child(4) { --r: 2deg; }
+  .tab svg { width: 30px; height: 30px; transition: transform .3s var(--spring); }
+  .tab:hover { transform: rotate(0deg) translateY(-2px); box-shadow: var(--lift-hi); }
+  .tab[aria-pressed="true"] {
+    background: var(--tomato);
+    color: var(--paper);
+    transform: rotate(0deg) translateY(-4px);
+    box-shadow: var(--lift-hi);
+  }
+  .tab[aria-pressed="true"] svg { transform: scale(1.12) rotate(-6deg); }
+  .tab[aria-pressed="true"]::before {
+    content: '';
+    position: absolute;
+    top: -9px; left: 50%;
+    width: 40px; height: 16px;
+    margin-left: -20px;
+    background: var(--tape);
+    mix-blend-mode: multiply;
+    transform: rotate(-4deg);
+  }
+  .tab:active { transform: scale(.94); }
+
+  /* ---- the sheet (preview / canvas) ---- */
+  .stage {
+    position: relative;
+    margin: 0 var(--pad) 18px;
+  }
+  .sheet {
+    position: relative;
+    background: var(--paper);
+  }
+  .sheet-shadow { filter: drop-shadow(0 8px 8px rgba(27,21,18,.22)); }
+  .sheet-inner {
+    position: relative;
+    height: clamp(170px, 46vw, 210px);
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
+    overflow: hidden;
+    /* faint ruled lines, like a page torn from a notebook */
+    background:
+      linear-gradient(90deg, transparent 30px, rgba(224,74,42,.25) 30px, rgba(224,74,42,.25) 31px, transparent 31px),
+      repeating-linear-gradient(transparent 0 27px, rgba(46,127,164,.14) 27px 28px);
   }
+  body.mode-draw .sheet-inner { height: auto; aspect-ratio: 3 / 2; background: none; }
+  .stage .tape.tl { top: -9px; left: -14px; transform: rotate(-32deg); }
+  .stage .tape.tr { top: -8px; right: -16px; transform: rotate(28deg); }
 
-  .media-btn::after {
-    content: '→';
-    font-size: 16px;
-    color: var(--rose);
-    transition: transform 0.2s;
+  .glyph {
+    width: clamp(96px, 28vw, 124px);
+    height: clamp(96px, 28vw, 124px);
+    filter: drop-shadow(2px 3px 0 rgba(27,21,18,.18));
   }
+  .glyph.swap { animation: swap .45s var(--spring); }
+  @keyframes swap { from { transform: scale(.6) rotate(-14deg); opacity: 0; } }
 
-  .media-btn:active {
-    background: var(--cream-deep);
-    transform: scale(0.98);
+  .canvas-wrap { position: absolute; inset: 0; display: none; touch-action: none; }
+  body.mode-draw .canvas-wrap { display: block; }
+  body.mode-draw .glyph { display: none; }
+  .canvas-wrap canvas {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    touch-action: none;
   }
-
-  .media-btn:active::after {
-    transform: translateX(3px);
+  #draw-live { pointer-events: none; }
+  #draw-canvas { cursor: crosshair; }
+  .draw-hint {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--marker);
+    font-size: 22px;
+    color: rgba(27,21,18,.28);
+    transform: rotate(-4deg);
+    pointer-events: none;
+    transition: opacity .2s;
   }
+  .canvas-wrap.inked .draw-hint { opacity: 0; }
 
-  #preview-img {
-    width: 46px;
+  /* ---- drawing toolbar ---- */
+  .tools { display: none; padding: 0 var(--pad) 18px; }
+  body.mode-draw .tools { display: block; }
+  .tool-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .tool-row + .tool-row { margin-top: 10px; }
+  .tool {
+    flex: 1 1 0;
+    min-width: 0;
     height: 46px;
-    border-radius: 12px;
-    display: none;
-    object-fit: cover;
-    border: 1.5px solid var(--hairline);
+    display: flex; align-items: center; justify-content: center;
+    background: var(--paper);
+    border-radius: var(--r-md);
+    box-shadow: var(--lift);
+    color: var(--ink);
+    transition: transform .2s var(--spring), background-color .15s, color .15s;
+  }
+  .tool svg { width: 22px; height: 22px; }
+  .tool:hover { transform: translateY(-2px); }
+  .tool:active { transform: scale(.92); }
+  .tool[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+  .tool:disabled { opacity: .35; transform: none; cursor: default; }
+  .tool.rainbow[aria-pressed="true"] {
+    background: conic-gradient(from 90deg, #e04a2a, #f2c230, #7a9a3a, #2e7fa4, #5b4a8a, #c94060, #e04a2a);
+    color: var(--ink);
+  }
+  .sep { width: 2px; align-self: stretch; margin: 6px 2px; background: rgba(27,21,18,.12); border-radius: 2px; flex: none; }
+  .size {
+    flex: 1 1 0;
+    height: 46px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--paper);
+    border-radius: var(--r-md);
+    box-shadow: var(--lift);
+    transition: transform .2s var(--spring), background-color .15s;
+  }
+  .size i {
+    display: block;
+    width: var(--d); height: var(--d);
+    border-radius: 50%;
+    background: currentColor;
+  }
+  .size[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+  .size:active { transform: scale(.92); }
+
+  /* ---- sections ---- */
+  .section { padding: 0 var(--pad) 20px; }
+  .section-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+  .label {
+    font-family: var(--marker);
+    font-size: 19px;
+    line-height: 1;
+    color: var(--ink);
+  }
+  .hint { font-family: var(--mono); font-size: 13px; color: var(--ink-soft); }
+
+  /* colour chips */
+  .swatches {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 9px;
+  }
+  .chip {
+    position: relative;
+    aspect-ratio: 1;
+    border-radius: 3px;
+    box-shadow: var(--lift);
+    transform: rotate(var(--r, 0deg));
+    transition: transform .2s var(--spring), box-shadow .2s;
+  }
+  .chip:hover { transform: rotate(0) translateY(-2px); box-shadow: var(--lift-hi); }
+  .chip[aria-pressed="true"] { transform: rotate(0) scale(1.14); box-shadow: var(--lift-hi), 0 0 0 3px var(--paper), 0 0 0 5px var(--ink); z-index: 1; }
+  .chip.light { outline: 1px solid rgba(27,21,18,.15); outline-offset: -1px; }
+  .chip.custom {
+    background: conic-gradient(#e04a2a, #f2c230, #7a9a3a, #2e7fa4, #5b4a8a, #c94060, #e04a2a);
+    overflow: hidden;
+  }
+  .chip.custom input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
+  .chip.custom::after {
+    content: '+';
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-weight: 700; font-size: 18px; color: var(--paper);
+    text-shadow: 0 1px 2px rgba(0,0,0,.5);
+    pointer-events: none;
   }
 
-  #preview-img.show { display: block; }
-
+  /* photo */
+  .row { display: flex; align-items: center; gap: 12px; }
+  .paper-btn {
+    flex: 1;
+    display: flex; align-items: center; gap: 10px;
+    padding: 13px 16px;
+    background: var(--paper);
+    border-radius: var(--r-md);
+    box-shadow: var(--lift);
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 14px;
+    text-align: left;
+    transition: transform .2s var(--spring), box-shadow .2s;
+  }
+  .paper-btn svg { width: 20px; height: 20px; flex: none; color: var(--pool); }
+  .paper-btn:hover { transform: translateY(-2px); box-shadow: var(--lift-hi); }
+  .paper-btn:active { transform: scale(.98); }
+  .polaroid {
+    position: relative;
+    display: none;
+    padding: 4px 4px 12px;
+    background: #fff;
+    box-shadow: var(--lift);
+    transform: rotate(4deg);
+  }
+  .polaroid.show { display: block; animation: swap .4s var(--spring); }
+  .polaroid img { width: 46px; height: 46px; object-fit: cover; display: block; }
+  .polaroid button {
+    position: absolute; top: -8px; right: -8px;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--ink); color: var(--paper);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .polaroid button svg { width: 12px; height: 12px; }
   #file-input { display: none; }
 
-  /* Location */
-  .loc-toggle {
+  /* location: a strip of three tickets */
+  .seg {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 6px;
-    margin-bottom: 10px;
+    background: var(--paper);
+    border-radius: var(--r-md);
+    box-shadow: var(--lift);
+    padding: 4px;
+    gap: 4px;
   }
-
-  .loc-toggle button {
-    padding: 11px 4px;
-    border: 1.5px solid var(--hairline);
-    background: white;
+  .seg button {
+    padding: 10px 4px;
+    border-radius: 5px;
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 14px;
     color: var(--ink-soft);
-    font-family: inherit;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    border-radius: 12px;
-    transition: all 0.2s;
+    transition: background-color .15s, color .15s;
   }
-
-  .loc-toggle button.active {
-    background: var(--ink);
-    border-color: var(--ink);
-    color: white;
-  }
-
+  .seg button:hover { background: rgba(27,21,18,.05); }
+  .seg button[aria-pressed="true"] { background: var(--pool); color: var(--paper); }
   #custom-loc {
     display: none;
     width: 100%;
-    padding: 13px 16px;
-    border: 1.5px solid var(--hairline);
-    background: white;
-    color: var(--ink);
-    font-family: inherit;
-    font-size: 14px;
-    font-weight: 500;
-    border-radius: 12px;
+    margin-top: 10px;
+    padding: 13px 14px;
+    background: var(--paper);
+    border: 0;
+    border-bottom: 2px dashed rgba(27,21,18,.3);
+    border-radius: var(--r-sm) var(--r-sm) 0 0;
+    font-family: var(--mono);
+    font-size: 16px;
   }
-
-  #custom-loc::placeholder { color: #B8A89A; }
   #custom-loc.show { display: block; }
-  #custom-loc:focus { outline: none; border-color: var(--rose); }
+  #custom-loc::placeholder { color: #a39383; }
+  #custom-loc:focus { outline: none; border-bottom-color: var(--pool); }
+  .loc-note { margin-top: 8px; font-family: var(--mono); font-size: 13px; color: var(--ink-soft); }
+  .loc-note:empty { display: none; }
 
-  /* Actions */
+  /* actions */
   .actions {
-    padding: 8px var(--pad-x) 24px;
+    margin-top: auto;
+    padding: 6px var(--pad) 10px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    margin-top: auto;
-    flex-shrink: 0;
+    gap: 14px;
   }
-
   #notif-btn {
-    padding: 13px 18px;
-    background: transparent;
-    border: 1.5px solid var(--hairline);
-    border-radius: 14px;
+    align-self: center;
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 10px;
+    font-family: var(--mono);
+    font-size: 14px;
     color: var(--ink-soft);
-    font-family: inherit;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.15s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
+    border-radius: var(--r-sm);
   }
-
-  #notif-btn::before {
-    content: '';
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--hairline);
-    transition: background 0.2s;
-  }
-
-  #notif-btn.on {
-    border-color: var(--rose);
-    color: var(--rose);
-  }
-
-  #notif-btn.on::before {
-    background: var(--rose);
-    box-shadow: 0 0 8px rgba(201,64,96,0.5);
-  }
-
-  #notif-btn:active { transform: scale(0.98); }
+  #notif-btn svg { width: 18px; height: 18px; }
+  #notif-btn:hover { color: var(--ink); }
+  #notif-btn.on { color: var(--pool); }
 
   #send-btn {
-    padding: 18px 28px;
-    background: var(--rose);
-    border: none;
-    border-radius: 18px;
-    color: white;
-    font-family: 'Cabinet Grotesk', sans-serif;
-    font-size: clamp(15px, 4.2vw, 17px);
-    font-weight: 800;
-    letter-spacing: -0.2px;
-    cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-    box-shadow: 0 6px 20px rgba(201,64,96,0.28);
     position: relative;
-    overflow: hidden;
+    padding: 18px 24px;
+    background: var(--tomato);
+    color: var(--paper);
+    font-family: var(--serif);
+    font-weight: 900;
+    font-size: 22px;
+    letter-spacing: -.01em;
+    box-shadow: 4px 5px 0 var(--ink);
+    clip-path: polygon(0 4%, 6% 0, 18% 3%, 33% 0, 50% 2%, 66% 0, 82% 3%, 94% 0, 100% 5%, 99% 50%, 100% 96%, 88% 100%, 70% 97%, 52% 100%, 34% 97%, 16% 100%, 2% 97%, 1% 50%);
+    transition: transform .2s var(--spring), filter .2s;
+  }
+  .send-wrap { position: relative; filter: drop-shadow(3px 4px 0 var(--ink)); transition: filter .15s, transform .2s var(--spring); }
+  .send-wrap:hover { transform: translateY(-2px) rotate(-.5deg); }
+  .send-wrap:active { transform: translate(2px, 3px); filter: drop-shadow(1px 1px 0 var(--ink)); }
+  #send-btn { box-shadow: none; width: 100%; }
+  #send-btn:disabled { background: var(--kraft); color: var(--ink-soft); cursor: progress; }
+  .send-wrap .tape { top: -10px; left: 50%; margin-left: -37px; transform: rotate(-3deg); }
+  .shake { animation: shake .4s; }
+  @keyframes shake {
+    20%, 60% { transform: translateX(-6px) rotate(-1deg); }
+    40%, 80% { transform: translateX(6px) rotate(1deg); }
   }
 
-  #send-btn::after {
-    content: '💋';
-    position: absolute;
-    right: 20px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 20px;
-    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-
-  #send-btn:active {
-    transform: scale(0.97);
-    box-shadow: 0 3px 10px rgba(201,64,96,0.3);
-  }
-
-  #send-btn:active::after {
-    transform: translateY(-50%) scale(1.3) rotate(-15deg);
-  }
-
-  #send-btn:disabled {
-    background: var(--hairline);
-    color: var(--ink-soft);
-    box-shadow: none;
-  }
-
-  #send-btn:disabled::after {
-    opacity: 0.4;
-  }
-
-  /* === Love burst animation === */
-  .burst-heart {
+  /* confetti */
+  .bit {
     position: fixed;
-    font-size: 28px;
     pointer-events: none;
     z-index: 9999;
-    animation: burstOut 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    will-change: transform, opacity;
+    animation: fling 1.15s cubic-bezier(.16, 1, .3, 1) forwards;
+  }
+  .bit.heart { clip-path: path('M10 18C4 13 0 10 0 5.5 0 2.4 2.4 0 5.4 0 7.4 0 9 1 10 2.6 11 1 12.6 0 14.6 0 17.6 0 20 2.4 20 5.5 20 10 16 13 10 18z'); }
+  @keyframes fling {
+    0% { transform: translate(0, 0) rotate(0) scale(.6); opacity: 1; }
+    70% { opacity: 1; }
+    100% { transform: translate(var(--tx), var(--ty)) rotate(var(--rot)) scale(1); opacity: 0; }
   }
 
-  @keyframes burstOut {
-    0% {
-      transform: translate(0, 0) scale(0.5) rotate(0deg);
-      opacity: 1;
-    }
-    60% { opacity: 1; }
-    100% {
-      transform: translate(var(--tx), var(--ty)) scale(1.4) rotate(var(--rot));
-      opacity: 0;
-    }
+  /* toast */
+  #toast {
+    position: fixed;
+    left: 50%; bottom: calc(24px + env(safe-area-inset-bottom));
+    max-width: min(90vw, 420px);
+    padding: 12px 16px;
+    background: var(--ink);
+    color: var(--paper);
+    font-family: var(--mono);
+    font-size: 14px;
+    border-radius: var(--r-sm);
+    transform: translate(-50%, 20px) rotate(-1deg);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s, transform .25s var(--spring);
+    z-index: 10000;
   }
-
-  #send-btn.bursting {
-    animation: sendPulse 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-
-  @keyframes sendPulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.08); }
-    100% { transform: scale(1); }
-  }
+  #toast.show { opacity: 1; transform: translate(-50%, 0) rotate(-1deg); }
 
   /* ========= RECEIVE VIEW ========= */
   #receive-view {
     position: fixed;
     inset: 0;
-    background: var(--cream);
+    z-index: 100;
+    overflow-y: auto;
+    background-color: var(--kraft);
+    background-image: inherit;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: env(safe-area-inset-top) 28px env(safe-area-inset-bottom);
-    gap: 36px;
-    z-index: 100;
-    animation: fadeIn 0.4s ease;
-    overflow-y: auto;
+    gap: 26px;
+    padding: max(24px, env(safe-area-inset-top)) 22px max(24px, env(safe-area-inset-bottom));
   }
-
-  @keyframes fadeIn {
-    from { opacity: 0; transform: scale(0.98); }
-    to { opacity: 1; transform: scale(1); }
+  #receive-view.enter .card-wrap { animation: pin .7s var(--spring) both; }
+  @keyframes pin {
+    from { transform: translateY(-40px) rotate(-12deg) scale(.85); opacity: 0; }
   }
-
-  #kiss-display {
-    width: clamp(150px, 50vw, 200px);
-    height: clamp(150px, 50vw, 200px);
-    filter: drop-shadow(0 12px 32px rgba(201,64,96,0.3));
-    flex-shrink: 0;
+  .card-wrap {
+    position: relative;
+    width: min(100%, 360px);
+    transform: rotate(-1.5deg);
+    filter: drop-shadow(0 14px 14px rgba(27,21,18,.3));
   }
-
-  #kiss-display.bounce { animation: pop 0.75s cubic-bezier(0.34, 1.56, 0.64, 1); }
-
-  @keyframes pop {
-    0% { transform: scale(0.3) rotate(-20deg); opacity: 0; }
-    50% { transform: scale(1.12) rotate(4deg); opacity: 1; }
-    100% { transform: scale(1) rotate(0); }
+  .card {
+    position: relative;
+    padding: 28px 22px 22px;
+    background: var(--paper);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
   }
-
-  #emoji-display {
-    font-size: clamp(140px, 45vw, 180px);
-    line-height: 1;
-    display: none;
-    filter: drop-shadow(0 12px 32px rgba(201,64,96,0.3));
-    flex-shrink: 0;
-  }
-
-  #emoji-display.bounce { animation: pop 0.75s cubic-bezier(0.34, 1.56, 0.64, 1); }
-
-  #location-display {
-    color: var(--ink-soft);
-    font-size: 15px;
-    font-weight: 500;
-    text-align: center;
-    max-width: 90vw;
-    line-height: 1.6;
-    padding: 12px 20px;
-    background: white;
-    border-radius: 16px;
-    border: 1.5px solid var(--hairline);
-  }
-
-  #location-display:empty { display: none; }
-
-  #location-display a {
-    color: var(--rose);
-    text-decoration: none;
-    font-weight: 600;
-  }
-
-  #location-display img {
-    max-width: min(80vw, 320px);
-    max-height: 45vh;
-    border-radius: 20px;
-    margin: 8px auto 0;
-    display: block;
+  .card-wrap .tape.tl { top: -10px; left: -12px; transform: rotate(-30deg); }
+  .card-wrap .tape.tr { top: -10px; right: -12px; transform: rotate(30deg); }
+  .card .big { width: min(56vw, 190px); height: min(56vw, 190px); }
+  #receive-view.enter .big { animation: swap .7s .25s var(--spring) both; }
+  .card .media {
+    width: 100%;
+    max-height: 52vh;
     object-fit: contain;
-    box-shadow: 0 8px 24px rgba(42,31,26,0.12);
+    background: #fff;
+    padding: 6px 6px 18px;
+    box-shadow: var(--lift);
+    transform: rotate(1.5deg);
   }
-
+  .caption {
+    font-family: var(--serif);
+    font-weight: 900;
+    font-size: 26px;
+    line-height: 1.15;
+    text-align: center;
+    letter-spacing: -.01em;
+  }
+  .meta { font-family: var(--mono); font-size: 14px; color: var(--ink-soft); text-align: center; }
+  .meta a { color: var(--pool); font-weight: 700; text-underline-offset: 3px; }
+  .meta svg { display: inline-block; width: 15px; height: 15px; vertical-align: -2px; margin-right: 4px; }
   #back-btn {
-    padding: 14px 32px;
+    padding: 13px 22px;
     background: var(--ink);
-    border: none;
-    border-radius: 14px;
-    color: white;
-    font-family: 'Cabinet Grotesk', sans-serif;
-    font-size: 14px;
+    color: var(--paper);
+    font-family: var(--mono);
     font-weight: 700;
-    letter-spacing: -0.2px;
-    cursor: pointer;
-    transition: all 0.15s;
-    flex-shrink: 0;
+    font-size: 15px;
+    border-radius: var(--r-sm);
+    box-shadow: 3px 4px 0 var(--tomato);
+    transform: rotate(1deg);
+    transition: transform .2s var(--spring), box-shadow .15s;
+  }
+  #back-btn:hover { transform: rotate(0) translateY(-2px); }
+  #back-btn:active { transform: translate(2px, 3px); box-shadow: 1px 1px 0 var(--tomato); }
+
+  .wiggle { animation: wiggle 1.6s ease-in-out .9s infinite; transform-origin: 50% 80%; }
+  @keyframes wiggle {
+    0%, 100% { transform: rotate(0); }
+    20% { transform: rotate(-9deg); }
+    40% { transform: rotate(7deg); }
+    60% { transform: rotate(-4deg); }
+    80% { transform: rotate(2deg); }
   }
 
-  #back-btn:active {
-    transform: scale(0.97);
-    background: var(--rose);
+  @media (max-height: 640px) {
+    .brand { padding-bottom: 14px; }
+    .tabs { padding-bottom: 16px; }
+    .sheet-inner { height: 150px; }
   }
-
-  .hidden { display: none !important; }
-
-  /* Very small phones (< 360px) */
-  @media (max-width: 360px) {
-    :root { --pad-x: 14px; }
-    .preview { border-radius: 22px; height: 140px; }
-    .tab { border-radius: 12px; padding: 10px 3px; }
-    .media-btn, #notif-btn { padding: 11px 14px; font-size: 12px; border-radius: 12px; }
-    #send-btn { padding: 16px 22px; border-radius: 16px; }
-  }
-
-  /* Very short landscape */
-  @media (max-height: 500px) and (orientation: landscape) {
-    .preview { height: 100px; }
-    #preview-icon { width: 60px; height: 60px; }
-    #preview-emoji { font-size: 50px; }
-    .topbar { padding: 8px var(--pad-x) 10px; }
-    .brand { font-size: 18px; }
-    .section { padding-bottom: 10px; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
   }
 </style>
 </head>
-<body>
+<body class="mode-kiss">
+
+<!-- shared icon defs -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <path id="heart-shape" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+  </defs>
+</svg>
 
 <!-- ============ SEND VIEW ============ -->
-<div id="send-view">
+<main id="send-view">
 
-  <header class="topbar">
-    <div class="brand">Ηλία ρίχτο<span class="accent">.</span></div>
-  </header>
+  <h1 class="brand" id="brand" aria-label="Ηλία ρίχτο"></h1>
 
-  <nav class="tabs" id="tabs">
-    <button class="tab active" data-type="kiss"><span class="tab-emoji">💋</span>Kiss</button>
-    <button class="tab" data-type="hug"><span class="tab-emoji">🤗</span>Hug</button>
-    <button class="tab" data-type="papoi"><span class="tab-emoji">🍌</span>Papoi</button>
-    <button class="tab" data-type="draw"><span class="tab-emoji">✏️</span>Draw</button>
+  <nav class="tabs" id="tabs" aria-label="What to send">
+    <button class="tab" data-type="kiss" aria-pressed="true">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M1.5 12.2C3.6 8.9 6.6 6.6 9 6.6c1.3 0 2.2.6 3 1.4.8-.8 1.7-1.4 3-1.4 2.4 0 5.4 2.3 7.5 5.6-2.5 3.6-6 6-10.5 6S4 15.8 1.5 12.2z"/><path d="M2.5 12.3c3 .9 6.2 1.3 9.5 1.3s6.5-.4 9.5-1.3" fill="none" stroke="var(--ink)" stroke-width="1.3" stroke-linecap="round" opacity=".55"/></svg>
+      Kiss
+    </button>
+    <button class="tab" data-type="hug" aria-pressed="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#heart-shape" fill="currentColor" transform="translate(6 2.5) scale(.5)"/><path d="M3 10.5c-.6 5.2 3.4 9.5 9 9.5s9.6-4.3 9-9.5M7.5 15.5c1.3 1 2.8 1.5 4.5 1.5s3.2-.5 4.5-1.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      Hug
+    </button>
+    <button class="tab" data-type="papoi" aria-pressed="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4.2 17.6c6.6 2.6 14-1.8 15.6-11.2l.9-1.8c.2-.4-.2-.8-.6-.6l-1.7.9C16.5 11.6 11.6 15 5.6 14.5c-1.8-.1-2.7 2.3-1.4 3.1z"/><path d="M19.3 5.2c-.5 6.8-5.6 11.3-12.4 11.4" fill="none" stroke="var(--ink)" stroke-width="1" stroke-linecap="round" opacity=".35"/></svg>
+      Papoi
+    </button>
+    <button class="tab" data-type="draw" aria-pressed="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 20l.9-4.3L15.7 4.9a1.6 1.6 0 012.3 0l1.1 1.1a1.6 1.6 0 010 2.3L8.3 19.1 4 20z"/><path d="M14 6.6l3.4 3.4" stroke="var(--ink)" stroke-width="1.2" opacity=".4"/></svg>
+      Draw
+    </button>
   </nav>
 
-  <div class="preview">
-    <svg id="preview-icon" viewBox="0 0 24 24"><path id="preview-path" fill="#C94060" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-    <div id="preview-emoji" style="display:none">🤗</div>
-    <canvas id="draw-canvas"></canvas>
+  <div class="stage">
+    <div class="sheet-shadow"><div class="sheet tear" data-tear="both">
+      <div class="sheet-inner" id="sheet-inner">
+        <svg class="glyph" id="preview-glyph" viewBox="0 0 24 24" aria-hidden="true"></svg>
+        <div class="canvas-wrap" id="canvas-wrap">
+          <canvas id="draw-canvas" aria-label="Drawing area"></canvas>
+          <canvas id="draw-live" aria-hidden="true"></canvas>
+          <div class="draw-hint">draw something here</div>
+        </div>
+      </div>
+    </div></div>
+    <span class="tape tl"></span>
+    <span class="tape tr"></span>
+  </div>
+
+  <div class="tools" id="tools" aria-label="Drawing tools">
+    <div class="tool-row" id="tool-row">
+      <button class="tool" data-tool="pen" aria-pressed="true" aria-label="Pen" title="Pen">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M4 20l1-4.5L16 4.5l3.5 3.5L8.5 19 4 20z"/><path d="M14 6.5l3.5 3.5"/></svg>
+      </button>
+      <button class="tool" data-tool="marker" aria-pressed="false" aria-label="Marker" title="Marker">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M14 4l6 6-8 8H8v-4l6-10z"/><path d="M8 18l-3 3h6"/><path d="M11 9l4 4"/></svg>
+      </button>
+      <button class="tool" data-tool="highlighter" aria-pressed="false" aria-label="Highlighter" title="Highlighter">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M9 14l-2 2v3h3l2-2"/><path d="M9 14l7.5-9.5 3 3L12 17"/><path d="M3 21h8" stroke-width="3" opacity=".5"/></svg>
+      </button>
+      <button class="tool" data-tool="spray" aria-pressed="false" aria-label="Spray" title="Spray">
+        <svg viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="10" width="7" height="11" rx="1.5"/><rect x="5.5" y="6.5" width="4" height="3.5" rx="1"/><circle cx="15" cy="7" r="1.1"/><circle cx="18.5" cy="5" r="1.1"/><circle cx="18" cy="9.5" r="1.1"/><circle cx="21" cy="7.5" r="1"/><circle cx="21" cy="12" r="1"/><circle cx="15.5" cy="11.5" r=".9"/></svg>
+      </button>
+      <button class="tool" data-tool="hearts" aria-pressed="false" aria-label="Heart stamps" title="Heart stamps">
+        <svg viewBox="0 0 24 24"><use href="#heart-shape" fill="currentColor" transform="translate(1 4) scale(.62)"/><use href="#heart-shape" fill="currentColor" transform="translate(11 1) scale(.5)" opacity=".7"/><use href="#heart-shape" fill="currentColor" transform="translate(12 13) scale(.42)" opacity=".5"/></svg>
+      </button>
+      <button class="tool" data-tool="eraser" aria-pressed="false" aria-label="Eraser" title="Eraser">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M9 20l-5-5 10-10 7 7-8 8H9z"/><path d="M9 10l7 7"/><path d="M13 20h8"/></svg>
+      </button>
+    </div>
+    <div class="tool-row">
+      <button class="size" data-size="3" aria-pressed="false" aria-label="Thin" title="Thin"><i style="--d:5px"></i></button>
+      <button class="size" data-size="6" aria-pressed="true" aria-label="Medium" title="Medium"><i style="--d:10px"></i></button>
+      <button class="size" data-size="12" aria-pressed="false" aria-label="Thick" title="Thick"><i style="--d:17px"></i></button>
+      <span class="sep" aria-hidden="true"></span>
+      <button class="tool rainbow" id="rainbow-btn" aria-pressed="false" aria-label="Rainbow ink" title="Rainbow ink">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 17a9 9 0 0118 0"/><path d="M6.5 17a5.5 5.5 0 0111 0"/><path d="M10 17a2 2 0 014 0"/></svg>
+      </button>
+      <button class="tool" id="undo-btn" aria-label="Undo" title="Undo" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 010 11H11"/></svg>
+      </button>
+      <button class="tool" id="clear-btn" aria-label="Clear drawing" title="Clear drawing" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>
+      </button>
+    </div>
   </div>
 
   <section class="section">
     <div class="section-head">
-      <div class="section-label">Color</div>
-      <div class="section-hint">pick one</div>
+      <h2 class="label" id="color-label">color</h2>
+      <span class="hint">pick one</span>
     </div>
-    <div class="color-grid" id="color-row"></div>
-    <input type="color" id="custom-color" value="#C94060">
+    <div class="swatches" id="swatches" role="group" aria-labelledby="color-label"></div>
   </section>
 
   <section class="section">
     <div class="section-head">
-      <div class="section-label">Photo</div>
-      <div class="section-hint">optional</div>
+      <h2 class="label">photo</h2>
+      <span class="hint">optional</span>
     </div>
-    <div class="photo-row">
-      <button class="media-btn" onclick="document.getElementById('file-input').click()">Add Photo</button>
-      <img id="preview-img">
+    <div class="row">
+      <button class="paper-btn" id="photo-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 8a2 2 0 012-2h2.5L9 4h6l1.5 2H19a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/><circle cx="12" cy="13" r="3.5"/></svg>
+        <span id="photo-btn-label">Add a photo</span>
+      </button>
+      <div class="polaroid" id="polaroid">
+        <img id="preview-img" alt="Selected photo">
+        <button id="photo-remove" aria-label="Remove photo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+      </div>
     </div>
     <input type="file" id="file-input" accept="image/*">
   </section>
 
   <section class="section">
     <div class="section-head">
-      <div class="section-label">Location</div>
-      <div class="section-hint">optional</div>
+      <h2 class="label" id="loc-label">location</h2>
+      <span class="hint">optional</span>
     </div>
-    <div class="loc-toggle" id="loc-toggle">
-      <button data-mode="off" class="active">Off</button>
-      <button data-mode="gps">GPS</button>
-      <button data-mode="text">Type</button>
+    <div class="seg" id="loc-toggle" role="group" aria-labelledby="loc-label">
+      <button data-mode="off" aria-pressed="true">Off</button>
+      <button data-mode="gps" aria-pressed="false">Where I am</button>
+      <button data-mode="text" aria-pressed="false">Type it</button>
     </div>
-    <input type="text" id="custom-loc" placeholder="Type a location...">
+    <input type="text" id="custom-loc" placeholder="e.g. the balcony" maxlength="80" aria-label="Location">
+    <p class="loc-note" id="loc-note"></p>
   </section>
 
   <div class="actions">
-    <button id="notif-btn">Enable Notifications</button>
-    <button id="send-btn">Send</button>
+    <div class="send-wrap" id="send-wrap">
+      <button id="send-btn">Send the kiss</button>
+    </div>
+    <button id="notif-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 0112 0v5l1.5 2h-15L6 16z"/><path d="M10 21h4"/></svg>
+      <span id="notif-label">Turn on notifications</span>
+    </button>
   </div>
-</div>
+</main>
 
 <!-- ============ RECEIVE VIEW ============ -->
-<div id="receive-view" class="hidden">
-  <svg id="kiss-display" viewBox="0 0 24 24"><path id="kiss-path" fill="#C94060" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-  <div id="emoji-display">🤗</div>
-  <div id="location-display"></div>
-  <button id="back-btn">← Send Another</button>
+<div id="receive-view" class="hidden" role="dialog" aria-modal="true" aria-labelledby="receive-caption">
+  <div class="card-wrap">
+  <div class="card tear" data-tear="bottom" id="receive-card">
+    <svg class="big" id="receive-glyph" viewBox="0 0 24 24" aria-hidden="true"></svg>
+    <img class="media hidden" id="receive-media" alt="">
+    <p class="caption" id="receive-caption"></p>
+    <p class="meta" id="receive-meta"></p>
+  </div>
+  <span class="tape tl"></span>
+  <span class="tape tr"></span>
+  </div>
+  <button id="back-btn">Send one back</button>
 </div>
 
-<script type="module">
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getFirestore, collection, doc, setDoc, onSnapshot, query, orderBy, limit }
-  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+<div id="toast" role="status" aria-live="polite"></div>
 
+<script type="module">
+/* ============================================================
+   Config
+   ============================================================ */
 const firebaseConfig = {
   apiKey: "AIzaSyBMsCKD2XexYnzfe1DXKF6mJMZ5P21k2Fw",
   authDomain: "filaki.firebaseapp.com",
@@ -699,413 +740,755 @@ const firebaseConfig = {
   messagingSenderId: "1067934466927",
   appId: "1:1067934466927:web:a22eaae83ebc4e2d975e9a"
 };
-
 const IMGBB_KEY = '9e30919b8718be370e22427d93a9060e';
-const GIPHY_KEY = 'ΒΑΛΕ_ΕΔΩ_ΤΟ_GIPHY_KEY';
+// Optional. Put a real Giphy API key here to send a random GIF with each papoi.
+// Without one, the papoi is the dancing banana below.
+const GIPHY_KEY = '';
+const GIPHY_TAG = 'minion';
 const MAX_FILE_MB = 15;
+const PHOTO_MAX_PX = 1600;
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+const FB = 'https://www.gstatic.com/firebasejs/10.12.0/';
 
-let selectedType = 'kiss';
-let selectedColor = '#C94060';
-let locMode = 'off';
-let selectedFile = null;
-let lastSendTime = 0;
-let lastShownDocId = null;
-let notifInitialized = false;
-let notifPending = false;
-
-const colors = [
-  '#C94060','#A82E4C','#E8607A','#F5A0B5','#F5D5DC',
-  '#E67E50','#F0A868','#D4A24C','#8B6F47','#2A1F1A',
-  '#6B5A4E','#8B7A6E','#B8A89A','#E8DDD1','#FDF8F3',
-  '#5C6B8A','#7A93B8','#A8C0D8','#6B8B7A','#A8C4B0'
-];
+/* ============================================================
+   Small helpers
+   ============================================================ */
+const $ = id => document.getElementById(id);
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch {} }
+};
+const deviceId = store.get('deviceId') || (() => {
+  const id = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2));
+  store.set('deviceId', id);
+  return id;
+})();
 
 function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, c => ({
-    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-  }[c]));
+  return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
 }
 
-// === Love burst animation ===
-function triggerLoveBurst(originEl) {
-  const emojis = ['💕', '💖', '💗', '💓', '❤️', '💝', '💘'];
-  const rect = originEl.getBoundingClientRect();
-  const cx = rect.left + rect.width / 2;
-  const cy = rect.top + rect.height / 2;
-
-  originEl.classList.remove('bursting');
-  void originEl.offsetWidth;
-  originEl.classList.add('bursting');
-
-  const count = 14;
-  for (let i = 0; i < count; i++) {
-    const heart = document.createElement('div');
-    heart.className = 'burst-heart';
-    heart.textContent = emojis[Math.floor(Math.random() * emojis.length)];
-
-    const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.6;
-    const distance = 100 + Math.random() * 120;
-    const tx = Math.cos(angle) * distance;
-    const ty = Math.sin(angle) * distance - 40;
-    const rot = (Math.random() - 0.5) * 360;
-
-    heart.style.left = cx + 'px';
-    heart.style.top = cy + 'px';
-    heart.style.setProperty('--tx', tx + 'px');
-    heart.style.setProperty('--ty', ty + 'px');
-    heart.style.setProperty('--rot', rot + 'deg');
-    heart.style.animationDelay = (Math.random() * 0.15) + 's';
-    heart.style.fontSize = (20 + Math.random() * 16) + 'px';
-
-    document.body.appendChild(heart);
-
-    setTimeout(() => heart.remove(), 1500);
-  }
+let toastTimer;
+function toast(msg) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
 }
 
-// === Canvas ===
-const canvas = document.getElementById('draw-canvas');
-canvas.width = 600;
-canvas.height = 280;
-const ctx = canvas.getContext('2d');
-ctx.lineWidth = 6;
-ctx.lineCap = 'round';
-ctx.lineJoin = 'round';
-ctx.strokeStyle = selectedColor;
-
-// === Color dots ===
-const colorRow = document.getElementById('color-row');
-colors.forEach(c => {
-  const dot = document.createElement('div');
-  dot.className = 'color-dot' + (c === selectedColor ? ' selected' : '');
-  dot.style.background = c;
-  if (c === '#FDF8F3') dot.style.border = '1.5px solid #E8DDD1';
-  dot.onclick = () => {
-    selectedColor = c;
-    document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('selected'));
-    dot.classList.add('selected');
-    document.getElementById('custom-color').value = c;
-    applyColor();
-  };
-  colorRow.appendChild(dot);
-});
-
-function applyColor() {
-  document.getElementById('preview-path').setAttribute('fill', selectedColor);
-  ctx.strokeStyle = selectedColor;
+function shake(el) {
+  el.classList.remove('shake');
+  void el.offsetWidth;
+  el.classList.add('shake');
 }
 
-document.getElementById('custom-color').addEventListener('input', e => {
-  selectedColor = e.target.value;
-  document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('selected'));
-  applyColor();
-});
-
-// === Tabs ===
-document.getElementById('tabs').addEventListener('click', e => {
-  const btn = e.target.closest('button');
-  if (!btn) return;
-  selectedType = btn.dataset.type;
-  document.querySelectorAll('#tabs button').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  updatePreview();
-});
-
-function updatePreview() {
-  const svg = document.getElementById('preview-icon');
-  const emoji = document.getElementById('preview-emoji');
-  const cv = document.getElementById('draw-canvas');
-
-  if (selectedType === 'kiss') {
-    svg.style.display = 'block';
-    emoji.style.display = 'none';
-    cv.style.display = 'none';
-  } else if (selectedType === 'hug') {
-    svg.style.display = 'none';
-    emoji.style.display = 'block';
-    emoji.textContent = '🤗';
-    cv.style.display = 'none';
-  } else if (selectedType === 'papoi') {
-    svg.style.display = 'none';
-    emoji.style.display = 'block';
-    emoji.textContent = '🍌';
-    cv.style.display = 'none';
+/* ============================================================
+   Torn paper edges (clip-path generated once)
+   ============================================================ */
+function rand(seed) { // tiny deterministic PRNG so edges don't change on every load
+  return () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
+}
+function tear(el, seed) {
+  const r = rand(seed);
+  const mode = el.dataset.tear;
+  const pts = [];
+  const step = 3.5;
+  if (mode === 'both') {
+    for (let x = 0; x <= 100; x += step) pts.push(`${Math.min(x, 100)}% ${(r() * 6).toFixed(1)}px`);
   } else {
-    svg.style.display = 'none';
-    emoji.style.display = 'none';
-    cv.style.display = 'block';
+    pts.push('0% 0%', '100% 0%');
+  }
+  for (let x = 100; x >= 0; x -= step) pts.push(`${Math.max(x, 0)}% calc(100% - ${(r() * 7).toFixed(1)}px)`);
+  el.style.clipPath = `polygon(${pts.join(',')})`;
+}
+document.querySelectorAll('.tear').forEach((el, i) => tear(el, 97 + i * 31));
+
+/* ============================================================
+   Ransom-note brand
+   ============================================================ */
+(() => {
+  const text = 'Ηλία ρίχτο';
+  const looks = [
+    { f: "'Literata'", w: 900, bg: 'var(--tomato)', c: 'var(--paper)' },
+    { f: "'Roboto Mono'", w: 700, bg: 'var(--paper)', c: 'var(--ink)' },
+    { f: "'Literata'", w: 700, bg: 'var(--ink)', c: 'var(--paper)', it: true },
+    { f: "'Commissioner'", w: 900, bg: 'var(--pool)', c: 'var(--paper)' },
+    { f: "'Literata'", w: 400, bg: 'var(--kraft)', c: 'var(--ink)' },
+    { f: "'Commissioner'", w: 900, bg: 'var(--paper)', c: 'var(--tomato)' },
+    { f: "'Roboto Mono'", w: 700, bg: 'var(--banana)', c: 'var(--ink)' },
+  ];
+  const rot = [-4, 3, -2, 5, -3, 2, -5, 4, -1, 3];
+  const brand = $('brand');
+  let i = 0;
+  for (const ch of text) {
+    if (ch === ' ') { const g = document.createElement('span'); g.className = 'gap'; brand.appendChild(g); continue; }
+    const s = document.createElement('span');
+    const l = looks[(i * 3) % looks.length];
+    s.className = 'ch';
+    s.setAttribute('aria-hidden', 'true');
+    s.textContent = ch;
+    s.style.cssText = `font-family:${l.f},serif;font-weight:${l.w};background:${l.bg};color:${l.c};` +
+      `${l.it ? 'font-style:italic;' : ''}--r:${rot[i % rot.length]}deg;--y:${(i % 3) - 1}px;--i:${i}`;
+    brand.appendChild(s);
+    i++;
+  }
+  const dot = document.createElement('span');
+  dot.className = 'dot';
+  dot.setAttribute('aria-hidden', 'true');
+  brand.appendChild(dot);
+})();
+
+/* ============================================================
+   Glyphs for kiss / hug / papoi
+   ============================================================ */
+function glyphMarkup(type, color) {
+  if (type === 'hug') {
+    return `<use href="#heart-shape" fill="${color}" transform="translate(5 1.5) scale(.58)"/>
+      <path d="M2.6 10.2c-.7 5.6 3.6 10.3 9.4 10.3s10.1-4.7 9.4-10.3" fill="none" stroke="#1b1512" stroke-width="1.6" stroke-linecap="round"/>
+      <path d="M6.8 15.6c1.4 1.2 3.2 1.8 5.2 1.8s3.8-.6 5.2-1.8" fill="none" stroke="#1b1512" stroke-width="1.6" stroke-linecap="round"/>`;
+  }
+  if (type === 'papoi') {
+    return `<g class="wiggle">
+      <path d="M3.6 18.2c7.2 3 15.2-2 16.9-12.2l1-2c.2-.4-.2-.9-.7-.7l-1.8 1C17.2 11.6 11.7 15.4 5.2 14.8c-2-.1-3 2.5-1.6 3.4z" fill="#f2c230" stroke="#1b1512" stroke-width=".9" stroke-linejoin="round"/>
+      <path d="M19.8 4.9C19.2 12.3 13.6 17.2 6.2 17.4" fill="none" stroke="#c99a12" stroke-width=".9" stroke-linecap="round"/>
+      <path d="M20.6 3.4l.9-.9" stroke="#5c4f45" stroke-width="1.4" stroke-linecap="round"/>
+      <path d="M3.6 18.2c-.5-.3-.7-.9-.5-1.4" fill="none" stroke="#5c4f45" stroke-width="1.2" stroke-linecap="round"/>
+    </g>`;
+  }
+  return `<use href="#heart-shape" fill="${color}"/>`;
+}
+
+/* ============================================================
+   State
+   ============================================================ */
+let selectedType = 'kiss';
+let selectedColor = '#e04a2a';
+let locMode = 'off';
+let selectedFile = null;
+let sending = false;
+
+const typeWords = { kiss: 'kiss', hug: 'hug', papoi: 'papoi', draw: 'drawing' };
+
+function refreshPreview(animate) {
+  const g = $('preview-glyph');
+  if (selectedType !== 'draw') {
+    g.innerHTML = glyphMarkup(selectedType, selectedColor);
+    if (animate) { g.classList.remove('swap'); void g.offsetWidth; g.classList.add('swap'); }
+  }
+  $('send-btn').textContent = `Send the ${typeWords[selectedType]}`;
+}
+
+/* ============================================================
+   Tabs
+   ============================================================ */
+$('tabs').addEventListener('click', e => {
+  const btn = e.target.closest('.tab');
+  if (!btn || btn.dataset.type === selectedType) return;
+  selectedType = btn.dataset.type;
+  document.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-pressed', String(b === btn)));
+  document.body.className = 'mode-' + selectedType;
+  refreshPreview(true);
+});
+
+/* ============================================================
+   Colours
+   ============================================================ */
+const colors = [
+  '#e04a2a', '#c94060', '#f08a9b', '#f2c230', '#e8902c', '#7a9a3a', '#b7d9a8',
+  '#2e7fa4', '#7fb6cf', '#5b4a8a', '#8b6f47', '#1b1512', '#faf3e3'
+];
+const chipRot = [-3, 2, -1, 3, -2, 1, -3, 2, 3, -2, 1, -1, 2, -3];
+const swatches = $('swatches');
+colors.forEach((c, i) => {
+  const b = document.createElement('button');
+  b.className = 'chip' + (c === '#faf3e3' || c === '#b7d9a8' ? ' light' : '');
+  b.style.background = c;
+  b.style.setProperty('--r', chipRot[i] + 'deg');
+  b.dataset.color = c;
+  b.setAttribute('aria-label', 'Color ' + c);
+  b.setAttribute('aria-pressed', String(c === selectedColor));
+  b.addEventListener('click', () => setColor(c));
+  swatches.appendChild(b);
+});
+const custom = document.createElement('label');
+custom.className = 'chip custom';
+custom.style.setProperty('--r', chipRot[13] + 'deg');
+custom.title = 'Any color';
+custom.innerHTML = `<input type="color" id="custom-color" value="#e04a2a" aria-label="Pick any color">`;
+swatches.appendChild(custom);
+$('custom-color').addEventListener('input', e => setColor(e.target.value, true));
+
+function setColor(c, fromCustom) {
+  selectedColor = c;
+  document.querySelectorAll('.chip[data-color]').forEach(b => b.setAttribute('aria-pressed', String(!fromCustom && b.dataset.color === c)));
+  custom.setAttribute('aria-pressed', String(!!fromCustom));
+  if (!fromCustom) $('custom-color').value = c;
+  if (drawState.rainbow && !fromCustom) setRainbow(false);
+  refreshPreview(false);
+}
+
+/* ============================================================
+   Drawing
+   ============================================================ */
+const CW = 900, CH = 600;
+const canvas = $('draw-canvas');
+const live = $('draw-live');
+canvas.width = live.width = CW;
+canvas.height = live.height = CH;
+const ctx = canvas.getContext('2d', { willReadFrequently: true });
+const lctx = live.getContext('2d');
+
+const drawState = { tool: 'pen', size: 6, rainbow: false, hue: 0, inked: false };
+const undoStack = [];
+const UNDO_MAX = 15;
+
+const TOOLS = {
+  pen:         { width: s => s * 1.8, alpha: 1,   blend: 'source-over', live: true },
+  marker:      { width: s => s * 3.6, alpha: .92, blend: 'source-over', live: true },
+  highlighter: { width: s => s * 6,   alpha: .38, blend: 'multiply',    live: true },
+  spray:       { width: s => s * 5 },
+  hearts:      { width: s => s * 4 },
+  eraser:      { width: s => s * 6 }
+};
+
+function strokeColor() {
+  if (!drawState.rainbow) return selectedColor;
+  drawState.hue = (drawState.hue + 4) % 360;
+  return `hsl(${drawState.hue} 78% 52%)`;
+}
+
+function pos(e) {
+  const r = canvas.getBoundingClientRect();
+  return { x: (e.clientX - r.left) * (CW / r.width), y: (e.clientY - r.top) * (CH / r.height) };
+}
+
+function tracePath(c, pts) {
+  c.beginPath();
+  c.moveTo(pts[0].x, pts[0].y);
+  if (pts.length === 1) { c.lineTo(pts[0].x + .01, pts[0].y); return; }
+  for (let i = 1; i < pts.length - 1; i++) {
+    const mx = (pts[i].x + pts[i + 1].x) / 2, my = (pts[i].y + pts[i + 1].y) / 2;
+    c.quadraticCurveTo(pts[i].x, pts[i].y, mx, my);
+  }
+  const last = pts[pts.length - 1];
+  c.lineTo(last.x, last.y);
+}
+
+function heartAt(c, x, y, s, color, angle) {
+  c.save();
+  c.translate(x, y);
+  c.rotate(angle);
+  c.scale(s / 24, s / 24);
+  c.translate(-12, -12);
+  c.fillStyle = color;
+  c.fill(new Path2D('M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z'));
+  c.restore();
+}
+
+function spray(p, w) {
+  const n = Math.round(w * .9);
+  ctx.fillStyle = strokeColor();
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const d = Math.sqrt(Math.random()) * w;
+    ctx.fillRect(p.x + Math.cos(a) * d, p.y + Math.sin(a) * d, 3, 3);
   }
 }
-updatePreview();
 
-// === Drawing ===
-let drawing = false;
-function getPos(e) {
-  const r = canvas.getBoundingClientRect();
-  return {
-    x: (e.clientX - r.left) * (canvas.width / r.width),
-    y: (e.clientY - r.top) * (canvas.height / r.height)
-  };
+let pts = [];
+let active = false;
+let lastStamp = null;
+let lastPt = null;
+
+function pushUndo() {
+  undoStack.push(ctx.getImageData(0, 0, CW, CH));
+  if (undoStack.length > UNDO_MAX) undoStack.shift();
+  syncDrawButtons();
 }
-canvas.addEventListener('pointerdown', e => {
-  e.preventDefault();
-  drawing = true;
-  const p = getPos(e);
-  ctx.beginPath();
-  ctx.moveTo(p.x, p.y);
-  try { canvas.setPointerCapture(e.pointerId); } catch {}
-});
-canvas.addEventListener('pointermove', e => {
-  if (!drawing) return;
-  e.preventDefault();
-  const p = getPos(e);
-  ctx.lineTo(p.x, p.y);
-  ctx.stroke();
-});
-canvas.addEventListener('pointerup', e => {
-  drawing = false;
-  try { canvas.releasePointerCapture(e.pointerId); } catch {}
-});
-canvas.addEventListener('pointercancel', () => { drawing = false; });
 
-function clearCanvas() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
+function setInked(v) {
+  drawState.inked = v;
+  $('canvas-wrap').classList.toggle('inked', v);
+  syncDrawButtons();
+}
+
+function syncDrawButtons() {
+  $('undo-btn').disabled = undoStack.length === 0;
+  $('clear-btn').disabled = !drawState.inked;
+}
+
+canvas.addEventListener('pointerdown', e => {
+  if (e.button > 0) return;
+  e.preventDefault();
+  try { canvas.setPointerCapture(e.pointerId); } catch {}
+  active = true;
+  pushUndo();
+  const p = pos(e);
+  const t = TOOLS[drawState.tool];
+  const w = t.width(drawState.size);
+  pts = [p];
+  lastPt = p;
+  ctx.lineCap = ctx.lineJoin = lctx.lineCap = lctx.lineJoin = 'round';
+
+  if (drawState.tool === 'spray') spray(p, w);
+  else if (drawState.tool === 'hearts') { heartAt(ctx, p.x, p.y, w * 2.2, strokeColor(), (Math.random() - .5) * .6); lastStamp = p; }
+  else if (drawState.tool === 'eraser') {
+    ctx.save(); ctx.globalCompositeOperation = 'destination-out';
+    ctx.lineWidth = w; tracePath(ctx, pts); ctx.stroke(); ctx.restore();
+  } else if (drawState.rainbow) {
+    ctx.strokeStyle = strokeColor(); ctx.globalAlpha = t.alpha; ctx.lineWidth = t.width(drawState.size);
+    ctx.globalCompositeOperation = t.blend; tracePath(ctx, pts); ctx.stroke();
+    ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+  } else {
+    renderLive();
+  }
+  if (drawState.tool !== 'eraser') setInked(true);
+});
+
+canvas.addEventListener('pointermove', e => {
+  if (!active) return;
+  e.preventDefault();
+  const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+  const t = TOOLS[drawState.tool];
+  const w = t.width(drawState.size);
+  for (const ev of events.length ? events : [e]) {
+    const p = pos(ev);
+    if (drawState.tool === 'spray') spray(p, w);
+    else if (drawState.tool === 'hearts') {
+      if (Math.hypot(p.x - lastStamp.x, p.y - lastStamp.y) > w * 2.6) {
+        heartAt(ctx, p.x, p.y, w * (1.6 + Math.random() * 1.2), strokeColor(), (Math.random() - .5) * .8);
+        lastStamp = p;
+      }
+    } else if (drawState.tool === 'eraser') {
+      ctx.save(); ctx.globalCompositeOperation = 'destination-out'; ctx.lineWidth = w;
+      ctx.beginPath(); ctx.moveTo(lastPt.x, lastPt.y); ctx.lineTo(p.x, p.y); ctx.stroke(); ctx.restore();
+    } else if (drawState.rainbow) {
+      ctx.strokeStyle = strokeColor(); ctx.globalAlpha = t.alpha; ctx.lineWidth = w;
+      ctx.globalCompositeOperation = t.blend;
+      ctx.beginPath(); ctx.moveTo(lastPt.x, lastPt.y); ctx.lineTo(p.x, p.y); ctx.stroke();
+      ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+    } else {
+      pts.push(p);
+    }
+    lastPt = p;
+  }
+  if (TOOLS[drawState.tool].live && !drawState.rainbow) renderLive();
+});
+
+function renderLive() {
+  const t = TOOLS[drawState.tool];
+  lctx.clearRect(0, 0, CW, CH);
+  lctx.strokeStyle = selectedColor;
+  lctx.lineWidth = t.width(drawState.size);
+  tracePath(lctx, pts);
+  lctx.stroke();
+  live.style.opacity = t.alpha;
+  live.style.mixBlendMode = t.blend === 'multiply' ? 'multiply' : 'normal';
+}
+
+function endStroke(e) {
+  if (!active) return;
+  active = false;
+  try { canvas.releasePointerCapture(e.pointerId); } catch {}
+  const t = TOOLS[drawState.tool];
+  if (t.live && !drawState.rainbow) {
+    ctx.save();
+    ctx.globalAlpha = t.alpha;
+    ctx.globalCompositeOperation = t.blend;
+    ctx.drawImage(live, 0, 0);
+    ctx.restore();
+    lctx.clearRect(0, 0, CW, CH);
+  }
+  if (drawState.tool === 'eraser') setInked(!isCanvasEmpty());
+}
+canvas.addEventListener('pointerup', endStroke);
+canvas.addEventListener('pointercancel', endStroke);
+
 function isCanvasEmpty() {
-  const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-  for (let i = 3; i < data.length; i += 4) if (data[i] !== 0) return false;
+  const d = ctx.getImageData(0, 0, CW, CH).data;
+  for (let i = 3; i < d.length; i += 16) if (d[i] !== 0) return false;
   return true;
 }
 
-// === Location ===
-document.getElementById('loc-toggle').addEventListener('click', e => {
-  if (e.target.tagName !== 'BUTTON') return;
-  locMode = e.target.dataset.mode;
-  document.querySelectorAll('#loc-toggle button').forEach(b => b.classList.remove('active'));
-  e.target.classList.add('active');
-  document.getElementById('custom-loc').classList.toggle('show', locMode === 'text');
-  if (locMode !== 'text') document.getElementById('custom-loc').value = '';
+function clearCanvas() {
+  ctx.clearRect(0, 0, CW, CH);
+  lctx.clearRect(0, 0, CW, CH);
+  setInked(false);
+}
+
+$('undo-btn').addEventListener('click', () => {
+  const snap = undoStack.pop();
+  if (!snap) return;
+  ctx.putImageData(snap, 0, 0);
+  setInked(!isCanvasEmpty());
+});
+$('clear-btn').addEventListener('click', () => {
+  if (!drawState.inked) return;
+  pushUndo();
+  clearCanvas();
+  toast('Cleared. Undo brings it back.');
 });
 
-// === Photo ===
-document.getElementById('file-input').addEventListener('change', e => {
-  selectedFile = e.target.files[0] || null;
-  const preview = document.getElementById('preview-img');
-  if (selectedFile) {
-    if (selectedFile.size > MAX_FILE_MB * 1024 * 1024) {
-      alert(`Photo too big (max ${MAX_FILE_MB}MB). Choose a smaller one.`);
-      selectedFile = null;
-      e.target.value = '';
-      preview.classList.remove('show');
-      return;
-    }
-    preview.src = URL.createObjectURL(selectedFile);
-    preview.classList.add('show');
-    clearCanvas();
-  } else preview.classList.remove('show');
+$('tool-row').addEventListener('click', e => {
+  const b = e.target.closest('.tool[data-tool]');
+  if (!b) return;
+  drawState.tool = b.dataset.tool;
+  document.querySelectorAll('.tool[data-tool]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
 });
+document.querySelectorAll('.size').forEach(b => b.addEventListener('click', () => {
+  drawState.size = +b.dataset.size;
+  document.querySelectorAll('.size').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+}));
+function setRainbow(v) {
+  drawState.rainbow = v;
+  $('rainbow-btn').setAttribute('aria-pressed', String(v));
+}
+$('rainbow-btn').addEventListener('click', () => setRainbow(!drawState.rainbow));
 
-// === Helpers ===
-async function fetchWithTimeout(url, options, ms = 15000) {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), ms);
-  try {
-    return await fetch(url, { ...options, signal: controller.signal });
-  } finally {
-    clearTimeout(timeoutId);
+// drawing on paper so it reads well when it lands
+function drawingBlob() {
+  const out = document.createElement('canvas');
+  out.width = CW; out.height = CH;
+  const o = out.getContext('2d');
+  o.fillStyle = '#faf3e3';
+  o.fillRect(0, 0, CW, CH);
+  o.drawImage(canvas, 0, 0);
+  return new Promise(res => out.toBlob(res, 'image/jpeg', .9));
+}
+
+/* ============================================================
+   Photo
+   ============================================================ */
+$('photo-btn').addEventListener('click', () => $('file-input').click());
+$('file-input').addEventListener('change', e => {
+  const f = e.target.files[0] || null;
+  if (f && f.size > MAX_FILE_MB * 1024 * 1024) {
+    toast(`That photo is over ${MAX_FILE_MB} MB. Pick a smaller one.`);
+    e.target.value = '';
+    return;
+  }
+  setPhoto(f);
+});
+$('photo-remove').addEventListener('click', () => { setPhoto(null); $('file-input').value = ''; });
+
+function setPhoto(f) {
+  selectedFile = f;
+  const img = $('preview-img');
+  if (img.src) URL.revokeObjectURL(img.src);
+  if (f) {
+    img.src = URL.createObjectURL(f);
+    $('polaroid').classList.add('show');
+    $('photo-btn-label').textContent = 'Change photo';
+  } else {
+    img.removeAttribute('src');
+    $('polaroid').classList.remove('show');
+    $('photo-btn-label').textContent = 'Add a photo';
   }
 }
 
-async function uploadToImgBB(formData) {
+// shrink big phone photos before upload: much faster, same look on screen
+async function compressPhoto(file) {
   try {
-    const res = await fetchWithTimeout(
-      `https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`,
-      { method: 'POST', body: formData },
-      20000
-    );
+    const bmp = await createImageBitmap(file);
+    const scale = Math.min(1, PHOTO_MAX_PX / Math.max(bmp.width, bmp.height));
+    if (scale === 1 && file.size < 1.5 * 1024 * 1024) return file;
+    const c = document.createElement('canvas');
+    c.width = Math.round(bmp.width * scale);
+    c.height = Math.round(bmp.height * scale);
+    c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+    const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', .86));
+    return blob || file;
+  } catch { return file; }
+}
+
+/* ============================================================
+   Location
+   ============================================================ */
+$('loc-toggle').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  locMode = b.dataset.mode;
+  document.querySelectorAll('#loc-toggle button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  $('custom-loc').classList.toggle('show', locMode === 'text');
+  $('loc-note').textContent = locMode === 'gps' ? 'Your location is added when you send.' : '';
+  if (locMode === 'text') $('custom-loc').focus();
+});
+
+/* ============================================================
+   Network helpers
+   ============================================================ */
+async function fetchWithTimeout(url, options = {}, ms = 15000) {
+  const ctrl = new AbortController();
+  const id = setTimeout(() => ctrl.abort(), ms);
+  try { return await fetch(url, { ...options, signal: ctrl.signal }); }
+  finally { clearTimeout(id); }
+}
+
+async function uploadToImgBB(blob) {
+  try {
+    const fd = new FormData();
+    fd.append('image', blob);
+    const res = await fetchWithTimeout(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, { method: 'POST', body: fd }, 25000);
     if (!res.ok) return null;
     const data = await res.json();
     return data?.data?.url || null;
   } catch { return null; }
 }
 
-async function fetchRandomMinionGif() {
+async function fetchPapoiGif() {
+  if (!GIPHY_KEY) return null;
   try {
-    const res = await fetchWithTimeout(
-      `https://api.giphy.com/v1/gifs/random?api_key=${GIPHY_KEY}&tag=minion&rating=g`,
-      {},
-      4000
-    );
+    const res = await fetchWithTimeout(`https://api.giphy.com/v1/gifs/random?api_key=${GIPHY_KEY}&tag=${encodeURIComponent(GIPHY_TAG)}&rating=g`, {}, 4000);
     if (!res.ok) return null;
     const data = await res.json();
-    return data?.data?.images?.original?.url || null;
+    return data?.data?.images?.downsized?.url || data?.data?.images?.original?.url || null;
   } catch { return null; }
 }
 
-// === Send ===
-document.getElementById('send-btn').addEventListener('click', async () => {
-  const now = Date.now();
-  if (now - lastSendTime < 1000) return;
-  lastSendTime = now;
+/* ============================================================
+   Firebase (loaded lazily so the page still works offline)
+   ============================================================ */
+let fs = null, db = null;
+const firebaseReady = (async () => {
+  try {
+    const [{ initializeApp }, firestore] = await Promise.all([
+      import(FB + 'firebase-app.js'),
+      import(FB + 'firebase-firestore.js')
+    ]);
+    fs = firestore;
+    db = fs.getFirestore(initializeApp(firebaseConfig));
+    startListener();
+    return true;
+  } catch (err) {
+    console.error('Firebase failed to load:', err);
+    return false;
+  }
+})();
 
-  const sendBtn = document.getElementById('send-btn');
-  sendBtn.disabled = true;
-  sendBtn.textContent = 'Sending';
+/* ============================================================
+   Confetti
+   ============================================================ */
+function confetti(fromEl) {
+  const r = fromEl.getBoundingClientRect();
+  const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  const palette = ['#e04a2a', '#2e7fa4', '#f2c230', '#faf3e3', '#c94060', '#d9c9a3', selectedColor];
+  for (let i = 0; i < 22; i++) {
+    const b = document.createElement('span');
+    const heart = i % 3 === 0;
+    b.className = 'bit' + (heart ? ' heart' : '');
+    const w = heart ? 20 : 6 + Math.random() * 10;
+    const h = heart ? 18 : 4 + Math.random() * 14;
+    const a = (Math.PI * 2 * i) / 22 + (Math.random() - .5) * .5;
+    const d = 90 + Math.random() * 140;
+    b.style.cssText = `left:${cx - w / 2}px;top:${cy - h / 2}px;width:${w}px;height:${h}px;` +
+      `background:${palette[i % palette.length]};animation-delay:${Math.random() * .12}s;` +
+      `--tx:${Math.cos(a) * d}px;--ty:${Math.sin(a) * d - 60}px;--rot:${(Math.random() - .5) * 540}deg`;
+    if (!heart) b.style.boxShadow = '0 0 0 .5px rgba(27,21,18,.15)';
+    document.body.appendChild(b);
+    setTimeout(() => b.remove(), 1400);
+  }
+}
 
-  triggerLoveBurst(sendBtn);
+/* ============================================================
+   Send
+   ============================================================ */
+$('send-btn').addEventListener('click', async () => {
+  if (sending) return;
+  const btn = $('send-btn');
+
+  if (selectedType === 'draw' && !drawState.inked && !selectedFile) {
+    shake($('send-wrap'));
+    toast('Draw something first.');
+    return;
+  }
+
+  sending = true;
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+  confetti(btn);
 
   try {
+    if (!(await firebaseReady)) throw new Error('offline');
+
     let location = null;
     if (locMode === 'gps') {
       try {
-        const pos = await new Promise((res, rej) =>
-          navigator.geolocation.getCurrentPosition(res, rej, { timeout: 5000 })
-        );
-        location = { type: 'gps', lat: pos.coords.latitude, lon: pos.coords.longitude };
-      } catch {}
+        const p = await new Promise((res, rej) =>
+          navigator.geolocation.getCurrentPosition(res, rej, { timeout: 6000, maximumAge: 60000 }));
+        location = { type: 'gps', lat: p.coords.latitude, lon: p.coords.longitude };
+      } catch { toast("Couldn't get your location. Sending without it."); }
     } else if (locMode === 'text') {
-      const text = document.getElementById('custom-loc').value.trim();
-      if (text) location = { type: 'text', label: text };
+      const t = $('custom-loc').value.trim();
+      if (t) location = { type: 'text', label: t };
     }
 
     let mediaUrl = null;
     if (selectedFile) {
-      const fd = new FormData();
-      fd.append('image', selectedFile);
-      mediaUrl = await uploadToImgBB(fd);
+      mediaUrl = await uploadToImgBB(await compressPhoto(selectedFile));
+      if (!mediaUrl) toast("The photo didn't upload. Sending without it.");
+    } else if (selectedType === 'draw') {
+      mediaUrl = await uploadToImgBB(await drawingBlob());
+      if (!mediaUrl) throw new Error('upload');
     } else if (selectedType === 'papoi') {
-      mediaUrl = await fetchRandomMinionGif();
-    } else if (selectedType === 'draw' && !isCanvasEmpty()) {
-      const base64 = canvas.toDataURL('image/png').split(',')[1];
-      const fd = new FormData();
-      fd.append('image', base64);
-      mediaUrl = await uploadToImgBB(fd);
+      mediaUrl = await fetchPapoiGif();
     }
 
-    const kissData = {
+    const data = {
       type: selectedType,
       color: selectedColor,
       location,
       mediaUrl,
-      time: now
+      from: deviceId,
+      time: Date.now()
     };
 
-    const docRef = doc(collection(db, 'kisses'));
-    lastShownDocId = docRef.id;
-    await setDoc(docRef, kissData);
+    const ref = fs.doc(fs.collection(db, 'kisses'));
+    markSeen(ref.id);
+    await fs.setDoc(ref, data);
 
-    selectedFile = null;
-    document.getElementById('file-input').value = '';
-    document.getElementById('preview-img').classList.remove('show');
-    document.getElementById('custom-loc').value = '';
-    clearCanvas();
+    setPhoto(null);
+    $('file-input').value = '';
+    $('custom-loc').value = '';
+    if (selectedType === 'draw') { clearCanvas(); undoStack.length = 0; syncDrawButtons(); }
 
-    showReceive(kissData);
+    showReceive(data);
   } catch (err) {
     console.error('Send failed:', err);
-    alert('Send failed. Check internet.');
+    toast(err.message === 'upload'
+      ? "The drawing didn't upload. Check your connection and send again."
+      : "Couldn't send. Check your connection and try again.");
   } finally {
-    sendBtn.disabled = false;
-    sendBtn.textContent = 'Send';
+    sending = false;
+    btn.disabled = false;
+    refreshPreview(false);
   }
 });
 
-// === Receive ===
+/* ============================================================
+   Receive
+   ============================================================ */
+const pinSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0114 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>';
+
 function showReceive(k) {
-  document.getElementById('send-view').classList.add('hidden');
-  document.getElementById('receive-view').classList.remove('hidden');
+  const view = $('receive-view');
+  const glyph = $('receive-glyph');
+  const media = $('receive-media');
+  const mine = k.from === deviceId;
+  const type = typeWords[k.type] ? k.type : 'kiss';
+  const word = typeWords[type];
 
-  const svg = document.getElementById('kiss-display');
-  const emoji = document.getElementById('emoji-display');
-  svg.classList.remove('bounce');
-  emoji.classList.remove('bounce');
+  $('send-view').classList.add('hidden');
+  view.classList.remove('hidden', 'enter');
+  void view.offsetWidth;
+  view.classList.add('enter');
 
   if (k.mediaUrl) {
-    svg.style.display = 'none';
-    emoji.style.display = 'none';
-  } else if (k.type === 'hug') {
-    svg.style.display = 'none';
-    emoji.style.display = 'block';
-    emoji.textContent = '🤗';
-    void emoji.offsetWidth;
-    emoji.classList.add('bounce');
+    media.src = k.mediaUrl;
+    media.alt = type === 'draw' ? 'A drawing' : 'Attached picture';
+    media.classList.remove('hidden');
+    media.onerror = () => { media.classList.add('hidden'); if (type !== 'draw') glyph.classList.remove('hidden'); };
   } else {
-    svg.style.display = 'block';
-    emoji.style.display = 'none';
-    document.getElementById('kiss-path').setAttribute('fill', k.color || '#C94060');
-    void svg.offsetWidth;
-    svg.classList.add('bounce');
+    media.classList.add('hidden');
+    media.removeAttribute('src');
   }
 
-  let html = '';
-  if (k.location) {
-    if (k.location.type === 'gps') {
-      html += `<a href="https://maps.google.com/?q=${k.location.lat},${k.location.lon}" target="_blank" rel="noopener">📍 ${k.location.lat.toFixed(3)}, ${k.location.lon.toFixed(3)}</a>`;
-    } else if (k.location.type === 'text') {
-      html += `📍 ${escapeHtml(k.location.label)}`;
-    }
+  // show the glyph unless a picture *is* the message
+  const showGlyph = type !== 'draw' && !(k.mediaUrl && type === 'papoi');
+  glyph.classList.toggle('hidden', !showGlyph);
+  if (showGlyph) glyph.innerHTML = glyphMarkup(type, k.color || '#e04a2a');
+  if (k.mediaUrl && type !== 'draw' && type !== 'papoi') {
+    glyph.style.width = glyph.style.height = 'min(30vw, 96px)';
+  } else {
+    glyph.style.width = glyph.style.height = '';
   }
-  if (k.mediaUrl) {
-    html += `<img src="${escapeHtml(k.mediaUrl)}" alt="" onerror="this.style.display='none'">`;
+
+  $('receive-caption').textContent = mine
+    ? `You sent a ${word}`
+    : (type === 'hug' ? 'A big hug for you' : `A ${word} for you`);
+
+  const bits = [];
+  if (k.location?.type === 'gps' && typeof k.location.lat === 'number') {
+    bits.push(`<a href="https://maps.google.com/?q=${k.location.lat},${k.location.lon}" target="_blank" rel="noopener">${pinSvg}Open on the map</a>`);
+  } else if (k.location?.type === 'text') {
+    bits.push(`${pinSvg}${escapeHtml(k.location.label)}`);
   }
-  document.getElementById('location-display').innerHTML = html || (k.type === 'hug' ? 'A hug for you 🤗' : '');
+  if (k.time) {
+    const t = new Date(k.time);
+    const today = new Date().toDateString() === t.toDateString();
+    bits.push(today
+      ? t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      : t.toLocaleDateString([], { day: 'numeric', month: 'short' }) + ', ' + t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+  }
+  $('receive-meta').innerHTML = bits.join('<br>');
+  $('back-btn').textContent = mine ? 'Send another' : 'Send one back';
+  $('back-btn').focus({ preventScroll: true });
 }
 
-document.getElementById('back-btn').addEventListener('click', () => {
-  document.getElementById('receive-view').classList.add('hidden');
-  document.getElementById('send-view').classList.remove('hidden');
+$('back-btn').addEventListener('click', () => {
+  $('receive-view').classList.add('hidden');
+  $('send-view').classList.remove('hidden');
 });
 
-// === Firestore listener ===
-let unsubscribeSnapshot = null;
+/* ============================================================
+   Live listener: only pop up things we haven't seen yet
+   ============================================================ */
+let lastSeen = store.get('lastSeenKiss');
+function markSeen(id) { lastSeen = id; store.set('lastSeenKiss', id); }
 
+let unsubscribe = null;
 function startListener() {
-  const q = query(collection(db, 'kisses'), orderBy('time', 'desc'), limit(1));
-  unsubscribeSnapshot = onSnapshot(q,
-    snap => {
-      snap.forEach(d => {
-        if (d.id === lastShownDocId) return;
-        showReceive(d.data());
-        lastShownDocId = d.id;
-      });
-    },
-    err => {
-      console.error('Snapshot error, retrying in 3s:', err);
-      if (unsubscribeSnapshot) { try { unsubscribeSnapshot(); } catch {} }
-      setTimeout(startListener, 3000);
-    }
-  );
-}
-startListener();
-
-// === Notifications ===
-document.getElementById('notif-btn').addEventListener('click', async () => {
-  if (notifInitialized || notifPending) return;
-  notifPending = true;
-  const btn = document.getElementById('notif-btn');
-  btn.textContent = 'Working...';
-
-  try {
-    await window.OneSignalDeferred.push(async function(OneSignal) {
-      await OneSignal.Notifications.requestPermission();
-      const granted = OneSignal.Notifications.permission;
-      if (granted) {
-        btn.textContent = 'Notifications On';
-        btn.classList.add('on');
-        notifInitialized = true;
-      } else {
-        btn.textContent = 'Tap to Retry';
-      }
+  const q = fs.query(fs.collection(db, 'kisses'), fs.orderBy('time', 'desc'), fs.limit(1));
+  unsubscribe = fs.onSnapshot(q, snap => {
+    snap.forEach(d => {
+      if (d.id === lastSeen) return;
+      const data = d.data();
+      markSeen(d.id);
+      if (data.from === deviceId) return; // ours, already shown
+      showReceive(data);
     });
-  } catch (err) {
-    console.error('Notify failed:', err);
-    btn.textContent = 'Tap to Retry';
-  } finally {
-    notifPending = false;
-  }
-});
-</script>
+  }, err => {
+    console.error('Listener error, retrying in 3s:', err);
+    try { unsubscribe && unsubscribe(); } catch {}
+    setTimeout(startListener, 3000);
+  });
+}
 
+/* ============================================================
+   Notifications
+   ============================================================ */
+function setNotifOn(on) {
+  $('notif-btn').classList.toggle('on', on);
+  $('notif-label').textContent = on ? 'Notifications are on' : 'Turn on notifications';
+}
+window.OneSignalDeferred.push(async OneSignal => {
+  setNotifOn(!!OneSignal.Notifications.permission);
+  OneSignal.Notifications.addEventListener('permissionChange', p => setNotifOn(!!p));
+});
+$('notif-btn').addEventListener('click', () => {
+  if ($('notif-btn').classList.contains('on')) return;
+  if (!('Notification' in window)) {
+    toast('On iPhone, add this app to your Home Screen first, then turn on notifications.');
+    return;
+  }
+  $('notif-label').textContent = 'Asking…';
+  window.OneSignalDeferred.push(async OneSignal => {
+    try {
+      await OneSignal.Notifications.requestPermission();
+      const on = !!OneSignal.Notifications.permission;
+      setNotifOn(on);
+      if (!on) toast('Notifications are blocked. Allow them in your browser settings.');
+    } catch (err) {
+      console.error('Notification request failed:', err);
+      setNotifOn(false);
+    }
+  });
+});
+
+refreshPreview(false);
+syncDrawButtons();
+// preview the receive card without sending anything: open the app with ?demo
+if (new URLSearchParams(location.search).has('demo')) window.demoReceive = showReceive;
+</script>
 </body>
 </html>
