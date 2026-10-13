@@ -1305,6 +1305,37 @@ async function drawingBase64() {
   return out.toDataURL('image/jpeg', .9).split(',')[1];
 }
 
+// A picture small enough to live inside the Firestore message itself
+// (docs max out at 1 MB), so it doesn't depend on ImgBB at all.
+const INLINE_MAX = 700 * 1024;
+function shrinkToDataUrl(src, srcW, srcH, maxSide) {
+  for (const side of [maxSide, maxSide * .75, maxSide * .55, maxSide * .4]) {
+    const sc = Math.min(1, side / Math.max(srcW, srcH));
+    const c = document.createElement('canvas');
+    c.width = Math.round(srcW * sc); c.height = Math.round(srcH * sc);
+    const x = c.getContext('2d');
+    x.fillStyle = '#faf3e3'; x.fillRect(0, 0, c.width, c.height);
+    x.drawImage(src, 0, 0, c.width, c.height);
+    for (const q of [.85, .72, .6]) {
+      const url = c.toDataURL('image/jpeg', q);
+      if (url.length < INLINE_MAX) return url;
+    }
+  }
+  return null;
+}
+async function drawingDataUrl() {
+  const b64 = await drawingBase64();
+  const img = new Image();
+  await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = 'data:image/jpeg;base64,' + b64; });
+  return shrinkToDataUrl(img, CW, CH, CW);
+}
+async function photoDataUrl(file) {
+  try {
+    const bmp = await createImageBitmap(file);
+    return shrinkToDataUrl(bmp, bmp.width, bmp.height, 1280);
+  } catch (e) { console.error('Photo shrink failed:', e); return null; }
+}
+
 /* ============================================================
    Photo
    ============================================================ */
@@ -1551,13 +1582,16 @@ $('send-btn').addEventListener('click', async () => {
 
     let mediaUrl = null;
     if (selectedType === 'draw') {
-      // the drawing (with the photo behind it, if one was added)
-      const up = await uploadToImgBB(await drawingBase64());
-      if (!up.url) throw Object.assign(new Error('upload'), { detail: up.error });
-      mediaUrl = up.url;
+      // the drawing (with the photo behind it, if one was added) goes inside the message itself
+      mediaUrl = await drawingDataUrl();
+      if (!mediaUrl) { // too big to fit (huge photo behind it): try ImgBB instead
+        const up = await uploadToImgBB(await drawingBase64());
+        if (!up.url) throw Object.assign(new Error('upload'), { detail: up.error });
+        mediaUrl = up.url;
+      }
     } else if (selectedFile) {
       const up = await uploadToImgBB(await compressPhoto(selectedFile));
-      mediaUrl = up.url || null;
+      mediaUrl = up.url || (await photoDataUrl(selectedFile));
       if (!mediaUrl) toast(`The photo didn't upload (${up.error}). Sending without it.`);
     } else if (selectedType === 'papoi') {
       if (gifLoading) await gifLoading;
@@ -1590,7 +1624,7 @@ $('send-btn').addEventListener('click', async () => {
     console.error('Send failed:', err);
     toast(err.message === 'upload'
       ? `The drawing didn't upload (${err.detail}). Your drawing is still here, so try again.`
-      : "Couldn't send. Check your connection and try again.");
+      : `Couldn't send (${err.code || err.message}). Check your connection and try again.`);
   } finally {
     sending = false;
     btn.disabled = false;
@@ -1870,6 +1904,7 @@ syncDrawButtons();
 if (new URLSearchParams(location.search).has('demo')) {
   window.demoReceive = showReceive;
   window.demoUpload = async () => uploadToImgBB(await drawingBase64());
+  window.demoInline = async () => { const u = await drawingDataUrl(); return u && { len: u.length, head: u.slice(0, 23) }; };
   window.demoLedger = (sent) => { ledger = sent; ledgerLoaded = true; renderLedger(); };
 }
 </script>
