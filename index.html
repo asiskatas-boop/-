@@ -247,7 +247,8 @@
   .gif-note:empty { display: none; }
   @keyframes swap { from { transform: scale(.6) rotate(-14deg); opacity: 0; } }
 
-  .canvas-wrap { position: absolute; inset: 0; display: none; touch-action: none; }
+  .canvas-wrap { position: absolute; inset: 0; display: none; touch-action: none; background: center / cover no-repeat; }
+  .canvas-wrap.photo-bg .draw-hint { opacity: 0; }
   body.mode-draw .canvas-wrap { display: block; }
   body.mode-draw .glyph { display: none; }
   .canvas-wrap canvas {
@@ -1286,14 +1287,22 @@ function setRainbow(v) {
 $('rainbow-btn').addEventListener('click', () => setRainbow(!drawState.rainbow));
 
 // drawing on paper so it reads well when it lands
-function drawingBlob() {
+async function drawingBase64() {
   const out = document.createElement('canvas');
   out.width = CW; out.height = CH;
   const o = out.getContext('2d');
   o.fillStyle = '#faf3e3';
   o.fillRect(0, 0, CW, CH);
+  if (selectedFile) {
+    try {
+      const bmp = await createImageBitmap(selectedFile);
+      const sc = Math.max(CW / bmp.width, CH / bmp.height); // cover, like the preview
+      const w = bmp.width * sc, h = bmp.height * sc;
+      o.drawImage(bmp, (CW - w) / 2, (CH - h) / 2, w, h);
+    } catch (e) { console.error('Photo background failed:', e); }
+  }
   o.drawImage(canvas, 0, 0);
-  return new Promise(res => out.toBlob(res, 'image/jpeg', .9));
+  return out.toDataURL('image/jpeg', .9).split(',')[1];
 }
 
 /* ============================================================
@@ -1317,10 +1326,14 @@ function setPhoto(f) {
   if (img.src) URL.revokeObjectURL(img.src);
   if (f) {
     img.src = URL.createObjectURL(f);
+    $('canvas-wrap').style.backgroundImage = `url("${img.src}")`;
+    $('canvas-wrap').classList.add('photo-bg');
     $('polaroid').classList.add('show');
     $('photo-btn-label').textContent = 'Change photo';
   } else {
     img.removeAttribute('src');
+    $('canvas-wrap').style.backgroundImage = '';
+    $('canvas-wrap').classList.remove('photo-bg');
     $('polaroid').classList.remove('show');
     $('photo-btn-label').textContent = 'Add a photo';
   }
@@ -1364,15 +1377,32 @@ async function fetchWithTimeout(url, options = {}, ms = 15000) {
   finally { clearTimeout(id); }
 }
 
-async function uploadToImgBB(blob) {
+// Sends the image as base64 text (the format the original app used, which ImgBB accepts reliably).
+// Returns { url } or { error }.
+function blobToBase64(blob) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(String(r.result).split(',')[1]);
+    r.onerror = () => rej(r.error);
+    r.readAsDataURL(blob);
+  });
+}
+async function uploadToImgBB(image) {
   try {
+    const b64 = typeof image === 'string' ? image : await blobToBase64(image);
     const fd = new FormData();
-    fd.append('image', blob);
-    const res = await fetchWithTimeout(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, { method: 'POST', body: fd }, 25000);
-    if (!res.ok) return null;
-    const data = await res.json();
-    return data?.data?.url || null;
-  } catch { return null; }
+    fd.append('image', b64);
+    const res = await fetchWithTimeout(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, { method: 'POST', body: fd }, 30000);
+    let data = null;
+    try { data = await res.json(); } catch {}
+    if (res.ok && data?.data?.url) return { url: data.data.url };
+    const error = data?.error?.message || `ImgBB error ${res.status}`;
+    console.error('ImgBB upload failed:', res.status, data);
+    return { error };
+  } catch (e) {
+    console.error('ImgBB upload failed:', e);
+    return { error: e.name === 'AbortError' ? 'upload took too long' : "couldn't reach ImgBB" };
+  }
 }
 
 // Returns { url } or { error } so the preview can say what went wrong.
@@ -1493,7 +1523,7 @@ $('send-btn').addEventListener('click', async () => {
   const btn = $('send-btn');
   if (!myName) { afterName = () => $('send-btn').click(); askName(); return; }
 
-  if (selectedType === 'draw' && !drawState.inked && !selectedFile) {
+  if (selectedType === 'draw' && !drawState.inked) {
     shake($('send-wrap'));
     toast('Draw something first.');
     return;
@@ -1520,12 +1550,15 @@ $('send-btn').addEventListener('click', async () => {
     }
 
     let mediaUrl = null;
-    if (selectedFile) {
-      mediaUrl = await uploadToImgBB(await compressPhoto(selectedFile));
-      if (!mediaUrl) toast("The photo didn't upload. Sending without it.");
-    } else if (selectedType === 'draw') {
-      mediaUrl = await uploadToImgBB(await drawingBlob());
-      if (!mediaUrl) throw new Error('upload');
+    if (selectedType === 'draw') {
+      // the drawing (with the photo behind it, if one was added)
+      const up = await uploadToImgBB(await drawingBase64());
+      if (!up.url) throw Object.assign(new Error('upload'), { detail: up.error });
+      mediaUrl = up.url;
+    } else if (selectedFile) {
+      const up = await uploadToImgBB(await compressPhoto(selectedFile));
+      mediaUrl = up.url || null;
+      if (!mediaUrl) toast(`The photo didn't upload (${up.error}). Sending without it.`);
     } else if (selectedType === 'papoi') {
       if (gifLoading) await gifLoading;
       mediaUrl = papoiGif || (await fetchPapoiGif()).url || null;
@@ -1556,7 +1589,7 @@ $('send-btn').addEventListener('click', async () => {
   } catch (err) {
     console.error('Send failed:', err);
     toast(err.message === 'upload'
-      ? "The drawing didn't upload. Check your connection and send again."
+      ? `The drawing didn't upload (${err.detail}). Your drawing is still here, so try again.`
       : "Couldn't send. Check your connection and try again.");
   } finally {
     sending = false;
@@ -1836,6 +1869,7 @@ syncDrawButtons();
 // preview the receive card without sending anything: open the app with ?demo
 if (new URLSearchParams(location.search).has('demo')) {
   window.demoReceive = showReceive;
+  window.demoUpload = async () => uploadToImgBB(await drawingBase64());
   window.demoLedger = (sent) => { ledger = sent; ledgerLoaded = true; renderLedger(); };
 }
 </script>
