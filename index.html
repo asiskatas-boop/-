@@ -461,6 +461,83 @@
     100% { transform: translate(var(--tx), var(--ty)) rotate(var(--rot)) scale(1); opacity: 0; }
   }
 
+  /* ---- the tab: who owes whom ---- */
+  .ledger { position: relative; margin: 0 var(--pad) 24px; }
+  .ledger-shadow { filter: drop-shadow(0 6px 6px rgba(27,21,18,.2)); }
+  .receipt {
+    background: var(--paper);
+    padding: 14px 16px 20px;
+    font-family: var(--mono);
+    font-size: 15px;
+  }
+  .receipt-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+  .receipt-head .label { font-size: 21px; }
+  .receipt-head button { font-family: var(--mono); font-size: 13px; color: var(--pool); text-decoration: underline; text-underline-offset: 3px; padding: 4px 0; }
+  .ledger table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  .ledger th { font-weight: 400; font-size: 13px; color: var(--ink-soft); text-align: right; padding: 4px 0 6px; }
+  .ledger th:first-child, .ledger td:first-child { text-align: left; }
+  .ledger td { padding: 8px 0; border-top: 1.5px dashed rgba(27,21,18,.22); text-align: right; font-weight: 700; }
+  .ledger td:first-child { max-width: 0; width: 46%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ledger td .you { font-weight: 400; color: var(--ink-soft); }
+  .ledger .owes-n {
+    display: inline-block; min-width: 34px; padding: 2px 8px;
+    border-radius: var(--r-sm); text-align: center;
+  }
+  .ledger .owes-n.due { background: var(--tomato); color: var(--paper); transform: rotate(-3deg); }
+  .ledger .owes-n.bump { animation: bump .6s var(--spring); }
+  @keyframes bump { 40% { transform: rotate(-3deg) scale(1.35); } }
+  .verdict {
+    margin-top: 10px;
+    font-family: var(--serif);
+    font-weight: 900;
+    font-size: 19px;
+    line-height: 1.25;
+  }
+  .ledger-empty { font-family: var(--serif); font-size: 16px; margin: 4px 0 12px; }
+  .ledger-empty + .paper-btn { width: 100%; }
+
+  /* name dialog */
+  #name-dialog {
+    position: fixed; inset: 0; z-index: 200;
+    display: flex; align-items: center; justify-content: center;
+    padding: 22px;
+    background: rgba(27,21,18,.45);
+  }
+  #name-dialog form {
+    position: relative;
+    width: min(100%, 360px);
+    padding: 26px 22px 22px;
+    background: var(--paper);
+    transform: rotate(-1deg);
+    box-shadow: 6px 7px 0 var(--ink);
+    display: flex; flex-direction: column; gap: 12px;
+    animation: pin .5s var(--spring) both;
+  }
+  #name-dialog h2 { font-family: var(--serif); font-weight: 900; font-size: 26px; line-height: 1.1; }
+  #name-dialog p { font-size: 15px; color: var(--ink-soft); }
+  #name-input {
+    width: 100%; padding: 13px 14px;
+    background: #fff; border: 0; border-bottom: 2px dashed rgba(27,21,18,.3);
+    font-family: var(--mono); font-size: 18px;
+  }
+  #name-input:focus { outline: none; border-bottom-color: var(--pool); }
+  .name-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .name-chips:empty { display: none; }
+  .name-chips button {
+    padding: 7px 12px; background: var(--cream); border-radius: var(--r-sm);
+    font-family: var(--mono); font-weight: 700; font-size: 14px; box-shadow: var(--lift);
+  }
+  #name-save {
+    margin-top: 4px; padding: 14px; background: var(--tomato); color: var(--paper);
+    font-family: var(--serif); font-weight: 900; font-size: 19px; border-radius: var(--r-sm);
+    box-shadow: 3px 4px 0 var(--ink);
+  }
+  #name-save:active { transform: translate(2px, 3px); box-shadow: 1px 1px 0 var(--ink); }
+  #name-dialog .tape { top: -10px; left: 50%; margin-left: -37px; transform: rotate(3deg); }
+
+  .owe-line { font-family: var(--marker); font-size: 18px; color: var(--tomato); text-align: center; transform: rotate(-2deg); }
+  .owe-line:empty { display: none; }
+
   /* toast */
   #toast {
     position: fixed;
@@ -585,6 +662,16 @@
 <main id="send-view">
 
   <h1 class="brand" id="brand" aria-label="Ηλία ρίχτο"></h1>
+
+  <section class="ledger" aria-labelledby="ledger-label">
+    <div class="ledger-shadow"><div class="receipt tear" data-tear="bottom" id="receipt">
+      <div class="receipt-head">
+        <h2 class="label" id="ledger-label">filakia owed</h2>
+        <button id="rename-btn" class="hidden">Not you?</button>
+      </div>
+      <div id="ledger-body"><p class="ledger-empty">Loading the tab…</p></div>
+    </div></div>
+  </section>
 
   <nav class="tabs" id="tabs" aria-label="What to send">
     <button class="tab" data-type="kiss" aria-pressed="true">
@@ -718,12 +805,24 @@
     <svg class="big" id="receive-glyph" viewBox="0 0 24 24" aria-hidden="true"></svg>
     <img class="media hidden" id="receive-media" alt="">
     <p class="caption" id="receive-caption"></p>
+    <p class="owe-line" id="receive-owe"></p>
     <p class="meta" id="receive-meta"></p>
   </div>
   <span class="tape tl"></span>
   <span class="tape tr"></span>
   </div>
   <button id="back-btn">Send one back</button>
+</div>
+
+<div id="name-dialog" class="hidden" role="dialog" aria-modal="true" aria-labelledby="name-title">
+  <form id="name-form">
+    <span class="tape"></span>
+    <h2 id="name-title">Who's sending?</h2>
+    <p>Your name goes on the tab, so everyone can see who owes whom.</p>
+    <div class="name-chips" id="name-chips"></div>
+    <input id="name-input" maxlength="20" autocomplete="nickname" placeholder="Your name" aria-label="Your name" required>
+    <button id="name-save" type="submit">That's me</button>
+  </form>
 </div>
 
 <div id="toast" role="status" aria-live="polite"></div>
@@ -741,9 +840,8 @@ const firebaseConfig = {
   appId: "1:1067934466927:web:a22eaae83ebc4e2d975e9a"
 };
 const IMGBB_KEY = '9e30919b8718be370e22427d93a9060e';
-// Optional. Put a real Giphy API key here to send a random GIF with each papoi.
-// Without one, the papoi is the dancing banana below.
-const GIPHY_KEY = '';
+// Giphy key for papoi GIFs. If Giphy fails, the papoi falls back to the dancing banana.
+const GIPHY_KEY = 'vMggDD6nkMVZA0yf4okMRDnuj3z8Vet9';
 const GIPHY_TAG = 'minion';
 const MAX_FILE_MB = 15;
 const PHOTO_MAX_PX = 1600;
@@ -1259,6 +1357,7 @@ const firebaseReady = (async () => {
     fs = firestore;
     db = fs.getFirestore(initializeApp(firebaseConfig));
     startListener();
+    startLedger();
     return true;
   } catch (err) {
     console.error('Firebase failed to load:', err);
@@ -1296,6 +1395,7 @@ function confetti(fromEl) {
 $('send-btn').addEventListener('click', async () => {
   if (sending) return;
   const btn = $('send-btn');
+  if (!myName) { afterName = () => $('send-btn').click(); askName(); return; }
 
   if (selectedType === 'draw' && !drawState.inked && !selectedFile) {
     shake($('send-wrap'));
@@ -1340,12 +1440,14 @@ $('send-btn').addEventListener('click', async () => {
       location,
       mediaUrl,
       from: deviceId,
+      fromName: myName,
       time: Date.now()
     };
 
     const ref = fs.doc(fs.collection(db, 'kisses'));
     markSeen(ref.id);
     await fs.setDoc(ref, data);
+    addToLedger(myName);
 
     setPhoto(null);
     $('file-input').value = '';
@@ -1403,9 +1505,12 @@ function showReceive(k) {
     glyph.style.width = glyph.style.height = '';
   }
 
+  const who = k.fromName && !mine ? ` from ${k.fromName}` : '';
   $('receive-caption').textContent = mine
     ? `You sent a ${word}`
-    : (type === 'hug' ? 'A big hug for you' : `A ${word} for you`);
+    : (type === 'hug' ? `A big hug${who}` : `A ${word}${who}`);
+  receiveShownFor = k;
+  $('receive-owe').textContent = oweLine(k);
 
   const bits = [];
   if (k.location?.type === 'gps' && typeof k.location.lat === 'number') {
@@ -1485,10 +1590,156 @@ $('notif-btn').addEventListener('click', () => {
   });
 });
 
+/* ============================================================
+   The tab (filakia debt)
+   Every message counts as one filaki. Each one you get, you owe
+   one back; each one you send pays one off. Once you're square,
+   sending more puts the other person in debt.
+   Counts live in one shared doc: kisses/_ledger -> { sent: { name: n } }
+   ============================================================ */
+let myName = store.get('myName') || '';
+let ledger = {};          // name -> sent count
+let ledgerLoaded = false;
+let receiveShownFor = null;
+const prevOwes = {};
+
+function owesTable() {
+  const names = Object.keys(ledger);
+  if (myName && !names.includes(myName)) names.push(myName);
+  const top = Math.max(0, ...names.map(n => ledger[n] || 0));
+  return names
+    .map(n => ({ name: n, sent: ledger[n] || 0, owes: top - (ledger[n] || 0) }))
+    .sort((a, b) => b.owes - a.owes || a.name.localeCompare(b.name));
+}
+
+function plural(n) { return n === 1 ? '1 filaki' : `${n} filakia`; }
+
+function verdict(rows) {
+  if (rows.length < 2) return rows.length ? 'Nobody owes anything yet.' : '';
+  const debtor = rows[0], others = rows.filter(r => r.owes === 0);
+  if (debtor.owes === 0) return 'All square.';
+  if (rows.length === 2) {
+    const creditor = others[0];
+    if (debtor.name === myName) return `You owe ${creditor.name} ${plural(debtor.owes)}.`;
+    if (creditor.name === myName) return `${debtor.name} owes you ${plural(debtor.owes)}.`;
+    return `${debtor.name} owes ${creditor.name} ${plural(debtor.owes)}.`;
+  }
+  return debtor.name === myName ? `You owe ${plural(debtor.owes)}.` : `${debtor.name} owes ${plural(debtor.owes)}.`;
+}
+
+function renderLedger() {
+  const body = $('ledger-body');
+  $('rename-btn').classList.toggle('hidden', !myName);
+  if (!myName) {
+    body.innerHTML = `<p class="ledger-empty">Add your name to start keeping the tab.</p>
+      <button class="paper-btn" id="ledger-name-btn">Add my name</button>`;
+    $('ledger-name-btn').addEventListener('click', askName);
+    return;
+  }
+  if (!ledgerLoaded) {
+    body.innerHTML = `<p class="ledger-empty">Loading the tab…</p>`;
+    return;
+  }
+  const rows = owesTable();
+  body.innerHTML = `<table>
+      <thead><tr><th scope="col">Who</th><th scope="col">Sent</th><th scope="col">Owes</th></tr></thead>
+      <tbody>${rows.map(r => `<tr>
+        <td>${escapeHtml(r.name)}${r.name === myName ? ' <span class="you">(you)</span>' : ''}</td>
+        <td>${r.sent}</td>
+        <td><span class="owes-n${r.owes ? ' due' : ''}${prevOwes[r.name] !== undefined && prevOwes[r.name] !== r.owes && r.owes > 0 ? ' bump' : ''}">${r.owes}</span></td>
+      </tr>`).join('')}</tbody>
+    </table>
+    <p class="verdict">${escapeHtml(verdict(rows))}</p>`;
+  rows.forEach(r => prevOwes[r.name] = r.owes);
+}
+
+// what the receive card says about the debt after this message
+function oweLine(k) {
+  if (!myName || !ledgerLoaded) return '';
+  const rows = owesTable();
+  const me = rows.find(r => r.name === myName);
+  if (!me) return '';
+  if (k.from !== deviceId && k.fromName && me.owes > 0) return `Now you owe ${plural(me.owes)}`;
+  if (k.from === deviceId) {
+    const debtor = rows.find(r => r.owes > 0 && r.name !== myName);
+    if (me.owes > 0) return `Still owe ${plural(me.owes)}`;
+    if (debtor && rows.length === 2) return `${debtor.name} owes you ${plural(debtor.owes)}`;
+    return 'All square';
+  }
+  return '';
+}
+
+function startLedger() {
+  fs.onSnapshot(fs.doc(db, 'kisses', '_ledger'), snap => {
+    const d = snap.exists() ? snap.data() : {};
+    ledger = {};
+    for (const [n, v] of Object.entries(d.sent || {})) if (typeof v === 'number') ledger[n] = v;
+    ledgerLoaded = true;
+    renderLedger();
+    if (receiveShownFor && !$('receive-view').classList.contains('hidden')) {
+      $('receive-owe').textContent = oweLine(receiveShownFor);
+    }
+  }, err => {
+    console.error('Ledger listener failed:', err);
+    $('ledger-body').innerHTML = `<p class="ledger-empty">Couldn't load the tab. It'll catch up when you're back online.</p>`;
+  });
+}
+
+async function addToLedger(name) {
+  try {
+    await fs.setDoc(fs.doc(db, 'kisses', '_ledger'),
+      { sent: { [name]: fs.increment(1) }, updated: Date.now() }, { merge: true });
+  } catch (err) {
+    console.error('Ledger update failed:', err);
+    toast('Sent, but the tab didn’t update.');
+  }
+}
+
+/* name dialog */
+let afterName = null;
+function askName() {
+  const chips = $('name-chips');
+  chips.innerHTML = '';
+  Object.keys(ledger).filter(n => n !== myName).forEach(n => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = n;
+    b.addEventListener('click', () => { $('name-input').value = n; $('name-input').focus(); });
+    chips.appendChild(b);
+  });
+  $('name-input').value = myName;
+  $('name-dialog').classList.remove('hidden');
+  setTimeout(() => $('name-input').focus(), 50);
+}
+$('name-form').addEventListener('submit', e => {
+  e.preventDefault();
+  const n = $('name-input').value.trim().replace(/\s+/g, ' ').slice(0, 20);
+  if (!n) return;
+  myName = n;
+  store.set('myName', n);
+  $('name-dialog').classList.add('hidden');
+  renderLedger();
+  const next = afterName; afterName = null;
+  if (next) next();
+});
+$('name-dialog').addEventListener('click', e => {
+  if (e.target === e.currentTarget && myName) { afterName = null; $('name-dialog').classList.add('hidden'); }
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && myName) $('name-dialog').classList.add('hidden');
+});
+$('rename-btn').addEventListener('click', askName);
+
+renderLedger();
+if (!myName) setTimeout(askName, 900);
+
 refreshPreview(false);
 syncDrawButtons();
 // preview the receive card without sending anything: open the app with ?demo
-if (new URLSearchParams(location.search).has('demo')) window.demoReceive = showReceive;
+if (new URLSearchParams(location.search).has('demo')) {
+  window.demoReceive = showReceive;
+  window.demoLedger = (sent) => { ledger = sent; ledgerLoaded = true; renderLedger(); };
+}
 </script>
 </body>
 </html>
