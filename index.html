@@ -211,6 +211,40 @@
     filter: drop-shadow(2px 3px 0 rgba(27,21,18,.18));
   }
   .glyph.swap { animation: swap .45s var(--spring); }
+
+  /* papoi GIF preview */
+  .gif, .gif-shuffle, .gif-note { display: none; }
+  body.mode-papoi .gif-shuffle, body.mode-papoi .gif-note { display: flex; }
+  body.mode-papoi.has-gif .glyph { display: none; }
+  body.mode-papoi.has-gif .gif { display: block; }
+  .gif {
+    max-width: 70%;
+    max-height: calc(100% - 28px);
+    object-fit: contain;
+    background: #fff;
+    padding: 5px 5px 14px;
+    box-shadow: var(--lift);
+    transform: rotate(-2deg);
+    animation: swap .45s var(--spring);
+  }
+  .gif-shuffle {
+    position: absolute; right: 12px; bottom: 14px;
+    align-items: center; gap: 6px;
+    padding: 7px 11px;
+    background: var(--ink); color: var(--paper);
+    font-family: var(--mono); font-weight: 700; font-size: 13px;
+    border-radius: var(--r-sm);
+    box-shadow: 2px 3px 0 var(--tomato);
+    transition: transform .2s var(--spring);
+  }
+  .gif-shuffle svg { width: 15px; height: 15px; }
+  .gif-shuffle:active { transform: translate(2px, 3px); box-shadow: none; }
+  .gif-shuffle:disabled { opacity: .5; }
+  .gif-note {
+    position: absolute; left: 40px; bottom: 14px; right: 120px;
+    font-family: var(--mono); font-size: 12px; line-height: 1.3; color: var(--ink-soft);
+  }
+  .gif-note:empty { display: none; }
   @keyframes swap { from { transform: scale(.6) rotate(-14deg); opacity: 0; } }
 
   .canvas-wrap { position: absolute; inset: 0; display: none; touch-action: none; }
@@ -696,6 +730,12 @@
     <div class="sheet-shadow"><div class="sheet tear" data-tear="both">
       <div class="sheet-inner" id="sheet-inner">
         <svg class="glyph" id="preview-glyph" viewBox="0 0 24 24" aria-hidden="true"></svg>
+        <img class="gif" id="papoi-gif" alt="The GIF that will be sent">
+        <p class="gif-note" id="gif-note" role="status"></p>
+        <button class="gif-shuffle" id="gif-shuffle" aria-label="Get a different GIF">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+          Another
+        </button>
         <div class="canvas-wrap" id="canvas-wrap">
           <canvas id="draw-canvas" aria-label="Drawing area"></canvas>
           <canvas id="draw-live" aria-hidden="true"></canvas>
@@ -987,6 +1027,7 @@ $('tabs').addEventListener('click', e => {
   document.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-pressed', String(b === btn)));
   document.body.className = 'mode-' + selectedType;
   refreshPreview(true);
+  if (selectedType === 'papoi' && !papoiGif) loadPapoiGif();
 });
 
 /* ============================================================
@@ -1334,15 +1375,70 @@ async function uploadToImgBB(blob) {
   } catch { return null; }
 }
 
-async function fetchPapoiGif() {
-  if (!GIPHY_KEY) return null;
-  try {
-    const res = await fetchWithTimeout(`https://api.giphy.com/v1/gifs/random?api_key=${GIPHY_KEY}&tag=${encodeURIComponent(GIPHY_TAG)}&rating=g`, {}, 4000);
-    if (!res.ok) return null;
-    const data = await res.json();
-    return data?.data?.images?.downsized?.url || data?.data?.images?.original?.url || null;
-  } catch { return null; }
+// Returns { url } or { error } so the preview can say what went wrong.
+async function giphy(path) {
+  const res = await fetchWithTimeout(`https://api.giphy.com/v1/gifs/${path}${path.includes('?') ? '&' : '?'}api_key=${GIPHY_KEY}`, {}, 8000);
+  let json = null;
+  try { json = await res.json(); } catch {}
+  if (!res.ok) throw new Error(json?.meta?.msg || json?.message || `HTTP ${res.status}`);
+  return json;
 }
+function gifUrl(g) {
+  const im = g?.images;
+  return im?.downsized_medium?.url || im?.downsized?.url || im?.fixed_height?.url || im?.original?.url || null;
+}
+async function fetchPapoiGif() {
+  if (!GIPHY_KEY) return { error: 'no Giphy key set' };
+  let firstError = null;
+  try {
+    const r = await giphy(`random?tag=${encodeURIComponent(GIPHY_TAG)}&rating=g`);
+    const url = gifUrl(r?.data);
+    if (url) return { url };
+  } catch (e) { firstError = e; }
+  try { // fallback: a random pick from search results
+    const r = await giphy(`search?q=${encodeURIComponent(GIPHY_TAG)}&limit=1&rating=g&offset=${Math.floor(Math.random() * 150)}`);
+    const url = gifUrl(r?.data?.[0]);
+    if (url) return { url };
+  } catch (e) { firstError = firstError || e; }
+  const e = firstError;
+  const msg = !e ? 'no GIF found'
+    : e.name === 'AbortError' ? 'Giphy took too long'
+    : e.message === 'Failed to fetch' ? "couldn't reach Giphy"
+    : e.message;
+  console.error('Giphy failed:', e || msg);
+  return { error: msg };
+}
+
+/* preview: load a GIF when the papoi tab opens, so you see what you'll send */
+let papoiGif = null;      // url currently previewed
+let gifLoading = null;
+async function loadPapoiGif() {
+  if (gifLoading) return gifLoading;
+  const btn = $('gif-shuffle'), note = $('gif-note'), img = $('papoi-gif');
+  btn.disabled = true;
+  note.textContent = 'Finding a GIF…';
+  gifLoading = (async () => {
+    const r = await fetchPapoiGif();
+    if (r.url) {
+      await new Promise(res => {
+        img.onload = () => res(true);
+        img.onerror = () => res(false);
+        img.src = r.url;
+      }).then(ok => {
+        if (ok) { papoiGif = r.url; document.body.classList.add('has-gif'); note.textContent = ''; }
+        else { note.textContent = "The GIF didn't load. Try another."; }
+      });
+    } else {
+      papoiGif = null;
+      document.body.classList.remove('has-gif');
+      note.textContent = `No GIF (${r.error}). The banana gets sent.`;
+    }
+    btn.disabled = false;
+    gifLoading = null;
+  })();
+  return gifLoading;
+}
+$('gif-shuffle').addEventListener('click', loadPapoiGif);
 
 /* ============================================================
    Firebase (loaded lazily so the page still works offline)
@@ -1431,7 +1527,8 @@ $('send-btn').addEventListener('click', async () => {
       mediaUrl = await uploadToImgBB(await drawingBlob());
       if (!mediaUrl) throw new Error('upload');
     } else if (selectedType === 'papoi') {
-      mediaUrl = await fetchPapoiGif();
+      if (gifLoading) await gifLoading;
+      mediaUrl = papoiGif || (await fetchPapoiGif()).url || null;
     }
 
     const data = {
@@ -1453,6 +1550,7 @@ $('send-btn').addEventListener('click', async () => {
     $('file-input').value = '';
     $('custom-loc').value = '';
     if (selectedType === 'draw') { clearCanvas(); undoStack.length = 0; syncDrawButtons(); }
+    if (selectedType === 'papoi' && papoiGif) { papoiGif = null; document.body.classList.remove('has-gif'); loadPapoiGif(); }
 
     showReceive(data);
   } catch (err) {
