@@ -1,0 +1,23 @@
+rules_version = '2';
+// Paste into Firebase console > Firestore Database > Rules, then Publish.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // the shared debt tab
+    match /kisses/_ledger {
+      allow read: if true;
+      allow create, update: if request.resource.data.keys().hasOnly(['sent', 'updated'])
+                            && request.resource.data.sent is map;
+    }
+
+    // messages: anyone with the app can read and send, nobody can edit or delete
+    match /kisses/{id} {
+      allow read: if true;
+      allow create: if id != '_ledger'
+        && request.resource.data.type in ['kiss', 'hug', 'papoi', 'draw']
+        && request.resource.data.time is int
+        && request.resource.data.keys().hasOnly(['type', 'color', 'location', 'mediaUrl', 'from', 'fromName', 'time']);
+      allow update, delete: if false;
+    }
+  }
+}

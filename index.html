@@ -1612,6 +1612,7 @@ $('send-btn').addEventListener('click', async () => {
     markSeen(ref.id);
     await fs.setDoc(ref, data);
     addToLedger(myName);
+    notifyOthers(ref.id);
 
     setPhoto(null);
     $('file-input').value = '';
@@ -1624,7 +1625,9 @@ $('send-btn').addEventListener('click', async () => {
     console.error('Send failed:', err);
     toast(err.message === 'upload'
       ? `The drawing didn't upload (${err.detail}). Your drawing is still here, so try again.`
-      : `Couldn't send (${err.code || err.message}). Check your connection and try again.`);
+      : err.code === 'permission-denied'
+        ? 'Firebase is blocking sends. Its security rules need updating.'
+        : `Couldn't send (${err.code || err.message}). Check your connection and try again.`);
   } finally {
     sending = false;
     btn.disabled = false;
@@ -1763,6 +1766,21 @@ $('notif-btn').addEventListener('click', () => {
    Counts live in one shared doc: kisses/_ledger -> { sent: { name: n } }
    ============================================================ */
 let myName = store.get('myName') || '';
+
+// push: tag this phone with its name so the sender doesn't notify themselves
+function tagPush(name) {
+  if (!name) return;
+  window.OneSignalDeferred.push(async OneSignal => {
+    try { await OneSignal.User.addTag('name', name); } catch (e) { console.error('Tagging failed:', e); }
+  });
+}
+function notifyOthers(id) {
+  if (location.protocol === 'file:') return;
+  fetch('/api/notify', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id }) })
+    .then(r => r.json()).then(r => { if (!r.ok) console.error('Push not sent:', r); })
+    .catch(e => console.error('Push not sent:', e));
+}
+tagPush(myName);
 let ledger = {};          // name -> sent count
 let ledgerLoaded = false;
 let receiveShownFor = null;
@@ -1846,7 +1864,9 @@ function startLedger() {
     }
   }, err => {
     console.error('Ledger listener failed:', err);
-    $('ledger-body').innerHTML = `<p class="ledger-empty">Couldn't load the tab. It'll catch up when you're back online.</p>`;
+    $('ledger-body').innerHTML = err.code === 'permission-denied'
+      ? `<p class="ledger-empty">Firebase is blocking the app, so nothing can load or send. Its security rules need updating.</p>`
+      : `<p class="ledger-empty">Couldn't load the tab (${escapeHtml(err.code || err.message)}). It'll catch up when you're back online.</p>`;
   });
 }
 
@@ -1882,6 +1902,7 @@ $('name-form').addEventListener('submit', e => {
   if (!n) return;
   myName = n;
   store.set('myName', n);
+  tagPush(n);
   $('name-dialog').classList.add('hidden');
   renderLedger();
   const next = afterName; afterName = null;
