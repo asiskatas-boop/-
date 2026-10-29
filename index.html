@@ -531,6 +531,37 @@
   .ledger-empty { font-family: var(--serif); font-size: 16px; margin: 4px 0 12px; }
   .ledger-empty + .paper-btn { width: 100%; }
 
+  /* tappable names in the tab */
+  .ledger td .who {
+    font: inherit; text-align: left; max-width: 100%;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    text-decoration: underline dotted rgba(27,21,18,.35); text-underline-offset: 4px;
+  }
+  .ledger-tip { font-family: var(--mono); font-size: 12px; color: var(--ink-soft); margin-top: 6px; }
+
+  /* fix-a-name dialog */
+  #fix-dialog {
+    position: fixed; inset: 0; z-index: 200;
+    display: flex; align-items: center; justify-content: center;
+    padding: 22px; background: rgba(27,21,18,.45);
+  }
+  #fix-dialog .box {
+    width: min(100%, 360px); padding: 24px 22px 20px;
+    background: var(--paper); transform: rotate(1deg);
+    box-shadow: 6px 7px 0 var(--ink);
+    display: flex; flex-direction: column; gap: 10px;
+    animation: pin .5s var(--spring) both;
+  }
+  #fix-dialog h2 { font-family: var(--serif); font-weight: 900; font-size: 24px; line-height: 1.15; overflow-wrap: anywhere; }
+  #fix-dialog p { font-size: 15px; color: var(--ink-soft); }
+  #fix-dialog .opt {
+    padding: 13px 14px; text-align: left; border-radius: var(--r-sm);
+    background: var(--cream); box-shadow: var(--lift);
+    font-family: var(--mono); font-weight: 700; font-size: 15px;
+  }
+  #fix-dialog .opt.danger { background: transparent; box-shadow: none; color: var(--tomato); text-decoration: underline; text-underline-offset: 3px; }
+  #fix-dialog .opt.cancel { background: transparent; box-shadow: none; color: var(--ink-soft); }
+
   /* name dialog */
   #name-dialog {
     position: fixed; inset: 0; z-index: 200;
@@ -864,6 +895,14 @@
     <input id="name-input" maxlength="20" autocomplete="nickname" placeholder="Your name" aria-label="Your name" required>
     <button id="name-save" type="submit">That's me</button>
   </form>
+</div>
+
+<div id="fix-dialog" class="hidden" role="dialog" aria-modal="true" aria-labelledby="fix-title">
+  <div class="box">
+    <h2 id="fix-title"></h2>
+    <p id="fix-sub"></p>
+    <div id="fix-opts" style="display:flex;flex-direction:column;gap:10px"></div>
+  </div>
 </div>
 
 <div id="toast" role="status" aria-live="polite"></div>
@@ -1827,12 +1866,13 @@ function renderLedger() {
   body.innerHTML = `<table>
       <thead><tr><th scope="col">Who</th><th scope="col">Sent</th><th scope="col">Owes</th></tr></thead>
       <tbody>${rows.map(r => `<tr>
-        <td>${escapeHtml(r.name)}${r.name === myName ? ' <span class="you">(you)</span>' : ''}</td>
+        <td><button class="who" data-name="${escapeHtml(r.name)}">${escapeHtml(r.name)}</button>${r.name === myName ? ' <span class="you">(you)</span>' : ''}</td>
         <td>${r.sent}</td>
         <td><span class="owes-n${r.owes ? ' due' : ''}${prevOwes[r.name] !== undefined && prevOwes[r.name] !== r.owes && r.owes > 0 ? ' bump' : ''}">${r.owes}</span></td>
       </tr>`).join('')}</tbody>
     </table>
-    <p class="verdict">${escapeHtml(verdict(rows))}</p>`;
+    <p class="verdict">${escapeHtml(verdict(rows))}</p>${rows.length > 2 ? '<p class="ledger-tip">Same person twice? Tap the extra name to fix it.</p>' : ''}`;
+  body.querySelectorAll('.who').forEach(b => b.addEventListener('click', () => openFix(b.dataset.name)));
   rows.forEach(r => prevOwes[r.name] = r.owes);
 }
 
@@ -1916,6 +1956,49 @@ document.addEventListener('keydown', e => {
 });
 $('rename-btn').addEventListener('click', askName);
 
+/* fix a name: fold a duplicate into the right name, or take it off the tab */
+function closeFix() { $('fix-dialog').classList.add('hidden'); }
+function openFix(name) {
+  const n = ledger[name] || 0;
+  $('fix-title').textContent = name;
+  $('fix-sub').textContent = `Has sent ${plural(n)}.`;
+  const opts = $('fix-opts');
+  opts.innerHTML = '';
+  const add = (label, cls, fn) => {
+    const b = document.createElement('button');
+    b.className = 'opt ' + cls; b.textContent = label;
+    b.addEventListener('click', fn); opts.appendChild(b); return b;
+  };
+  Object.keys(ledger).filter(o => o !== name).forEach(o => {
+    add(`Same person as ${o}: add the ${n} to ${o}`, '', () => fixLedger(name, o));
+  });
+  if (name === myName) add('Change my name instead', '', () => { closeFix(); askName(); });
+  const rm = add('Remove from the tab', 'danger', () => {
+    if (rm.dataset.armed) return fixLedger(name, null);
+    rm.dataset.armed = '1';
+    rm.textContent = `Tap again to remove ${name} and their ${n}`;
+  });
+  add('Cancel', 'cancel', closeFix);
+  $('fix-dialog').classList.remove('hidden');
+}
+async function fixLedger(from, into) {
+  try {
+    const ref = fs.doc(db, 'kisses', '_ledger');
+    const n = ledger[from] || 0;
+    const args = [new fs.FieldPath('sent', from), fs.deleteField()];
+    if (into) args.push(new fs.FieldPath('sent', into), fs.increment(n));
+    args.push('updated', Date.now());
+    await fs.updateDoc(ref, ...args);
+    if (from === myName && into) { myName = into; store.set('myName', into); tagPush(into); }
+    closeFix();
+    toast(into ? `Done. ${from} is now part of ${into}.` : `${from} is off the tab.`);
+  } catch (err) {
+    console.error('Fixing the tab failed:', err);
+    toast(`Couldn't change the tab (${err.code || err.message}).`);
+  }
+}
+$('fix-dialog').addEventListener('click', e => { if (e.target === e.currentTarget) closeFix(); });
+
 renderLedger();
 if (!myName) setTimeout(askName, 900);
 
@@ -1927,6 +2010,7 @@ if (new URLSearchParams(location.search).has('demo')) {
   window.demoUpload = async () => uploadToImgBB(await drawingBase64());
   window.demoInline = async () => { const u = await drawingDataUrl(); return u && { len: u.length, head: u.slice(0, 23) }; };
   window.demoLedger = (sent) => { ledger = sent; ledgerLoaded = true; renderLedger(); };
+  window.demoMe = (n) => { myName = n; renderLedger(); };
 }
 </script>
 </body>
