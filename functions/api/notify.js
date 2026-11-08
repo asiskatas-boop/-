@@ -56,7 +56,8 @@ export async function onRequestPost({ request, env }) {
   let res = await send('Key');                                   // current OneSignal keys
   if (res.status === 401 || res.status === 403) res = await send('Basic'); // legacy keys
   const out = await res.json().catch(() => ({}));
-  return json({ ok: res.ok, onesignal: out }, res.ok ? 200 : 502);
+  const delivered = res.ok && !!out.id && !(out.errors && out.errors.length);
+  return json({ ok: delivered, onesignal: out }, delivered ? 200 : 502);
 }
 
 export const onRequest = () => json({ error: 'POST only' }, 405);

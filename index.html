@@ -1813,10 +1813,27 @@ function tagPush(name) {
     try { await OneSignal.User.addTag('name', name); } catch (e) { console.error('Tagging failed:', e); }
   });
 }
+// tells you on screen why a notification didn't go out, so it can be fixed
+function pushProblem(r) {
+  const e = r?.error || '';
+  const os = r?.onesignal || {};
+  const osErr = [].concat(os.errors || []).map(x => typeof x === 'string' ? x : JSON.stringify(x)).join(' ');
+  if (/ONESIGNAL_REST_API_KEY/.test(e)) return 'the OneSignal key is missing in Cloudflare';
+  if (/not subscribed|no subscribers|recipients/i.test(osErr) || os.recipients === 0) return "the other phone isn't signed up for notifications";
+  if (/auth|key/i.test(osErr)) return 'OneSignal rejected the key';
+  return e || osErr || 'unknown reason';
+}
 function notifyOthers(id) {
   if (location.protocol === 'file:') return;
   fetch('/api/notify', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id }) })
-    .then(r => r.json()).then(r => { if (!r.ok) console.error('Push not sent:', r); })
+    .then(async res => {
+      let r = {};
+      try { r = await res.json(); } catch { r = { error: res.status === 404 ? 'the notification sender is not deployed' : `HTTP ${res.status}` }; }
+      if (!r.ok || r.onesignal?.recipients === 0) {
+        console.error('Push not sent:', r);
+        setTimeout(() => toast(`Sent, but no notification went out: ${pushProblem(r)}.`), 1500);
+      }
+    })
     .catch(e => console.error('Push not sent:', e));
 }
 tagPush(myName);
