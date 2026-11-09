@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="paper">#FAF3E3</color>
+    <color name="cream">#F2E8D5</color>
+    <color name="ink">#1B1512</color>
+    <color name="ink_soft">#5C4F45</color>
+    <color name="tomato">#E04A2A</color>
+    <color name="pool">#2E7FA4</color>
+    <color name="banana">#F7E3A1</color>
+</resources>
