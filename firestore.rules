@@ -19,5 +19,20 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly(['type', 'color', 'location', 'mediaUrl', 'from', 'fromName', 'time']);
       allow update, delete: if false;
     }
+
+    // the couch agenda: add, tick/untick, and clear ticked items
+    match /together/{id} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasOnly(['text', 'by', 'done', 'time'])
+        && request.resource.data.text is string
+        && request.resource.data.text.size() > 0
+        && request.resource.data.text.size() <= 140
+        && request.resource.data.by is string
+        && request.resource.data.done == false
+        && request.resource.data.time is int;
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['done', 'doneBy', 'doneAt'])
+        && request.resource.data.done is bool;
+      allow delete: if resource.data.done == true;
+    }
   }
 }

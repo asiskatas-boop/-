@@ -562,6 +562,68 @@
   #fix-dialog .opt.danger { background: transparent; box-shadow: none; color: var(--tomato); text-decoration: underline; text-underline-offset: 3px; }
   #fix-dialog .opt.cancel { background: transparent; box-shadow: none; color: var(--ink-soft); }
 
+  /* ---- the couch agenda: shared to-do / to-talk list ---- */
+  .agenda { position: relative; margin: 0 var(--pad) 26px; }
+  .agenda-shadow { filter: drop-shadow(0 6px 6px rgba(27,21,18,.2)); }
+  .note {
+    background:
+      repeating-linear-gradient(transparent 0 31px, rgba(27,21,18,.09) 31px 32px),
+      #f7e3a1;
+    padding: 16px 16px 20px;
+    transform: rotate(.6deg);
+  }
+  .agenda .tape { top: -10px; left: 50%; margin-left: -37px; transform: rotate(-2deg); }
+  .note-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
+  .note-head .label { font-size: 21px; }
+  .note-head .count { font-family: var(--mono); font-size: 13px; color: var(--ink-soft); }
+  .agenda ul { list-style: none; }
+  .agenda li {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 6px 0;
+    min-height: 32px;
+  }
+  .agenda li.done .txt { text-decoration: line-through; text-decoration-color: var(--tomato); text-decoration-thickness: 2px; color: var(--ink-soft); }
+  .agenda li.new { animation: swap .45s var(--spring); }
+  .tick {
+    flex: none; width: 24px; height: 24px; margin-top: 1px;
+    border: 2px solid var(--ink); border-radius: 5px;
+    background: rgba(255,255,255,.5);
+    display: flex; align-items: center; justify-content: center;
+    transition: transform .2s var(--spring), background-color .15s;
+  }
+  .tick svg { width: 16px; height: 16px; opacity: 0; transform: scale(.4) rotate(-20deg); transition: opacity .15s, transform .25s var(--spring); }
+  li.done .tick { background: var(--tomato); border-color: var(--tomato); color: var(--paper); }
+  li.done .tick svg { opacity: 1; transform: none; }
+  .tick:active { transform: scale(.85); }
+  .agenda .txt { flex: 1; min-width: 0; font-size: 17px; line-height: 1.35; overflow-wrap: anywhere; }
+  .agenda .by { display: block; font-family: var(--mono); font-size: 12px; color: var(--ink-soft); margin-top: 1px; }
+  .agenda-empty { font-size: 16px; padding: 6px 0 4px; }
+  .agenda form { display: flex; gap: 8px; margin-top: 10px; }
+  #agenda-input {
+    flex: 1; min-width: 0;
+    padding: 11px 12px;
+    background: rgba(255,255,255,.65);
+    border: 0; border-bottom: 2px dashed rgba(27,21,18,.35);
+    border-radius: var(--r-sm) var(--r-sm) 0 0;
+    font-family: var(--serif); font-size: 16px;
+  }
+  #agenda-input:focus { outline: none; border-bottom-color: var(--pool); background: #fff; }
+  #agenda-add {
+    flex: none; padding: 0 16px;
+    background: var(--ink); color: var(--paper);
+    font-family: var(--mono); font-weight: 700; font-size: 14px;
+    border-radius: var(--r-sm);
+    box-shadow: 2px 3px 0 var(--tomato);
+  }
+  #agenda-add:active { transform: translate(2px, 3px); box-shadow: none; }
+  #agenda-add:disabled { opacity: .5; }
+  .agenda-more { display: flex; gap: 14px; margin-top: 8px; }
+  .agenda-more button {
+    font-family: var(--mono); font-size: 13px; color: var(--pool);
+    text-decoration: underline; text-underline-offset: 3px; padding: 4px 0;
+  }
+  .agenda-more button.hidden { display: none; }
+
   /* name dialog */
   #name-dialog {
     position: fixed; inset: 0; z-index: 200;
@@ -737,6 +799,26 @@
       </div>
       <div id="ledger-body"><p class="ledger-empty">Loading the tab…</p></div>
     </div></div>
+  </section>
+
+  <section class="agenda" aria-labelledby="agenda-label">
+    <div class="agenda-shadow"><div class="note tear" data-tear="bottom">
+      <div class="note-head">
+        <h2 class="label" id="agenda-label">the couch agenda</h2>
+        <span class="count" id="agenda-count"></span>
+      </div>
+      <ul id="agenda-list"></ul>
+      <p class="agenda-empty hidden" id="agenda-empty">Nothing yet. Add things to do or talk about next time you're together.</p>
+      <div class="agenda-more">
+        <button id="agenda-toggle" class="hidden"></button>
+        <button id="agenda-clear" class="hidden">Clear ticked</button>
+      </div>
+      <form id="agenda-form" autocomplete="off">
+        <input id="agenda-input" maxlength="140" placeholder="Something to do or talk about" aria-label="New item for the couch agenda">
+        <button id="agenda-add" type="submit">Add</button>
+      </form>
+    </div></div>
+    <span class="tape"></span>
   </section>
 
   <nav class="tabs" id="tabs" aria-label="What to send">
@@ -1554,6 +1636,7 @@ const firebaseReady = (async () => {
     db = fs.getFirestore(initializeApp(firebaseConfig));
     startListener();
     startLedger();
+    startAgenda();
     return true;
   } catch (err) {
     console.error('Firebase failed to load:', err);
@@ -1683,7 +1766,7 @@ function showReceive(k) {
   const view = $('receive-view');
   const glyph = $('receive-glyph');
   const media = $('receive-media');
-  const mine = k.from === deviceId;
+  const mine = k.from === deviceId || (!!myName && k.fromName === myName);
   const type = typeWords[k.type] ? k.type : 'kiss';
   const word = typeWords[type];
 
@@ -1756,7 +1839,7 @@ function startListener() {
       if (d.id === lastSeen) return;
       const data = d.data();
       markSeen(d.id);
-      if (data.from === deviceId) return; // ours, already shown
+      if (data.from === deviceId || (myName && data.fromName === myName)) return; // ours (also from your widget)
       showReceive(data);
     });
   }, err => {
@@ -2016,6 +2099,129 @@ async function fixLedger(from, into) {
 }
 $('fix-dialog').addEventListener('click', e => { if (e.target === e.currentTarget) closeFix(); });
 
+/* ============================================================
+   The couch agenda: one shared list of things to do or talk about
+   together/{id} -> { text, by, done, time, doneBy?, doneAt? }
+   ============================================================ */
+let agenda = [];
+let agendaOpen = false;
+let agendaLoaded = false;
+const AGENDA_PREVIEW = 4;
+const seenItems = new Set();
+const tickSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>';
+
+function agoText(t) {
+  const m = Math.round((Date.now() - t) / 60000);
+  if (m < 1) return 'just now';
+  if (m < 60) return `${m} min ago`;
+  const h = Math.round(m / 60);
+  if (h < 24) return `${h} h ago`;
+  const d = Math.round(h / 24);
+  return d === 1 ? 'yesterday' : `${d} days ago`;
+}
+
+function renderAgenda() {
+  const open = agenda.filter(i => !i.done).sort((a, b) => a.time - b.time);
+  const done = agenda.filter(i => i.done).sort((a, b) => (b.doneAt || 0) - (a.doneAt || 0));
+  const all = [...open, ...done];
+  const shown = agendaOpen ? all : open.slice(0, AGENDA_PREVIEW);
+  const list = $('agenda-list');
+  list.innerHTML = shown.map(i => `
+    <li class="${i.done ? 'done' : ''}${agendaLoaded && !seenItems.has(i.id) ? ' new' : ''}" data-id="${i.id}">
+      <button class="tick" aria-label="${i.done ? 'Untick' : 'Tick off'}: ${escapeHtml(i.text)}" aria-pressed="${!!i.done}">${tickSvg}</button>
+      <span class="txt">${escapeHtml(i.text)}<span class="by">${escapeHtml(i.by === myName ? 'you' : i.by || 'someone')}, ${agoText(i.time)}</span></span>
+    </li>`).join('');
+  agenda.forEach(i => seenItems.add(i.id));
+  $('agenda-empty').classList.toggle('hidden', !agendaLoaded || all.length > 0);
+  $('agenda-count').textContent = open.length ? `${open.length} to go` : (done.length ? 'all done' : '');
+  const hiddenCount = all.length - shown.length;
+  const tog = $('agenda-toggle');
+  tog.classList.toggle('hidden', !agendaOpen && hiddenCount === 0);
+  tog.textContent = agendaOpen ? 'Show less' : `Show all (${hiddenCount} more)`;
+  $('agenda-clear').classList.toggle('hidden', !agendaOpen || done.length === 0);
+}
+
+function startAgenda() {
+  const q = fs.query(fs.collection(db, 'together'), fs.orderBy('time', 'desc'), fs.limit(150));
+  fs.onSnapshot(q, snap => {
+    agenda = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const first = !agendaLoaded;
+    if (first) agenda.forEach(i => seenItems.add(i.id));
+    agendaLoaded = true;
+    renderAgenda();
+  }, err => {
+    console.error('Agenda listener failed:', err);
+    $('agenda-empty').classList.remove('hidden');
+    $('agenda-empty').textContent = err.code === 'permission-denied'
+      ? 'Firebase is blocking the list. Its rules need the new "together" section.'
+      : `Couldn't load the list (${err.code || err.message}).`;
+  });
+}
+
+$('agenda-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const input = $('agenda-input');
+  const text = input.value.trim().replace(/\s+/g, ' ').slice(0, 140);
+  if (!text) { input.focus(); return; }
+  if (!myName) { askName(); return; }
+  if (!(await firebaseReady)) { toast("Can't reach the list right now."); return; }
+  $('agenda-add').disabled = true;
+  try {
+    const ref = await fs.addDoc(fs.collection(db, 'together'), { text, by: myName, done: false, time: Date.now() });
+    input.value = '';
+    notifyItem(ref.id);
+  } catch (err) {
+    console.error('Adding failed:', err);
+    toast(err.code === 'permission-denied'
+      ? 'Firebase is blocking the list. Its rules need the new "together" section.'
+      : `Couldn't add it (${err.code || err.message}).`);
+  } finally {
+    $('agenda-add').disabled = false;
+  }
+});
+
+$('agenda-list').addEventListener('click', async e => {
+  const btn = e.target.closest('.tick');
+  if (!btn) return;
+  const id = btn.closest('li').dataset.id;
+  const item = agenda.find(i => i.id === id);
+  if (!item) return;
+  const done = !item.done;
+  item.done = done; item.doneAt = Date.now(); renderAgenda(); // feel instant
+  try {
+    await fs.updateDoc(fs.doc(db, 'together', id), done
+      ? { done: true, doneBy: myName || 'someone', doneAt: Date.now() }
+      : { done: false, doneBy: fs.deleteField(), doneAt: fs.deleteField() });
+  } catch (err) {
+    console.error('Tick failed:', err);
+    item.done = !done; renderAgenda();
+    toast(`Couldn't update it (${err.code || err.message}).`);
+  }
+});
+
+$('agenda-toggle').addEventListener('click', () => { agendaOpen = !agendaOpen; renderAgenda(); });
+$('agenda-clear').addEventListener('click', async () => {
+  const done = agenda.filter(i => i.done);
+  if (!done.length) return;
+  try {
+    const batch = fs.writeBatch(db);
+    done.forEach(i => batch.delete(fs.doc(db, 'together', i.id)));
+    await batch.commit();
+    toast(`Cleared ${done.length} ticked ${done.length === 1 ? 'item' : 'items'}.`);
+  } catch (err) {
+    console.error('Clear failed:', err);
+    toast(`Couldn't clear them (${err.code || err.message}).`);
+  }
+});
+
+function notifyItem(id) {
+  if (location.protocol === 'file:') return;
+  fetch('/api/notify', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id, kind: 'item' }) })
+    .then(r => r.json()).then(r => { if (!r.ok) console.error('Item push not sent:', r); })
+    .catch(e => console.error('Item push not sent:', e));
+}
+setInterval(() => agendaLoaded && renderAgenda(), 60000); // keep "5 min ago" fresh
+
 renderLedger();
 if (!myName) setTimeout(askName, 900);
 
@@ -2028,6 +2234,7 @@ if (new URLSearchParams(location.search).has('demo')) {
   window.demoInline = async () => { const u = await drawingDataUrl(); return u && { len: u.length, head: u.slice(0, 23) }; };
   window.demoLedger = (sent) => { ledger = sent; ledgerLoaded = true; renderLedger(); };
   window.demoMe = (n) => { myName = n; renderLedger(); };
+  window.demoAgenda = (items) => { agenda = items; agendaLoaded = true; renderAgenda(); };
 }
 </script>
 </body>
