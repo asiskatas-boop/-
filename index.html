@@ -202,6 +202,7 @@
       repeating-linear-gradient(transparent 0 27px, rgba(46,127,164,.14) 27px 28px);
   }
   body.mode-draw .sheet-inner { height: auto; aspect-ratio: 3 / 2; background: none; }
+  body.mode-draw.draw-portrait .sheet-inner { aspect-ratio: 2 / 3; }
   .stage .tape.tl { top: -9px; left: -14px; transform: rotate(-32deg); }
   .stage .tape.tr { top: -8px; right: -16px; transform: rotate(28deg); }
 
@@ -299,6 +300,46 @@
     background: conic-gradient(from 90deg, #e04a2a, #f2c230, #7a9a3a, #2e7fa4, #5b4a8a, #c94060, #e04a2a);
     color: var(--ink);
   }
+  /* brush strip scrolls sideways; the last brush peeks out to show there are more */
+  .brush-strip {
+    display: flex; gap: 8px;
+    overflow-x: auto; scroll-snap-type: x proximity;
+    margin: 0 calc(var(--pad) * -1); padding: 4px var(--pad) 8px;
+    scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 var(--pad), #000 calc(100% - 28px), transparent);
+            mask-image: linear-gradient(90deg, transparent 0, #000 var(--pad), #000 calc(100% - 28px), transparent);
+  }
+  .brush-strip::-webkit-scrollbar { display: none; }
+  .brush-strip .tool { flex: 0 0 48px; scroll-snap-align: start; }
+  .brush-strip .tool:last-child { margin-right: 24px; }
+
+  .size-row {
+    display: flex; align-items: center; gap: 12px;
+    margin: 6px 0 12px;
+    min-height: 46px;
+    padding: 0 12px;
+    background: var(--paper);
+    border-radius: var(--r-md);
+    box-shadow: var(--lift);
+  }
+  .brush-name { flex: none; width: 94px; font-family: var(--mono); font-weight: 700; font-size: 13px; }
+  .size-preview { flex: none; width: 46px; height: 46px; display: flex; align-items: center; justify-content: center; }
+  .size-preview i { display: block; border-radius: 50%; background: var(--ink); }
+  .fill-hint { display: none; font-family: var(--mono); font-size: 13px; color: var(--ink-soft); }
+  .size-row.is-fill input, .size-row.is-fill .size-preview { display: none; }
+  .size-row.is-fill .fill-hint { display: block; }
+  #size-range {
+    flex: 1; min-width: 0; height: 28px;
+    -webkit-appearance: none; appearance: none; background: none; cursor: pointer;
+  }
+  #size-range::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: linear-gradient(90deg, rgba(27,21,18,.25), var(--ink)); }
+  #size-range::-moz-range-track { height: 4px; border-radius: 2px; background: linear-gradient(90deg, rgba(27,21,18,.25), var(--ink)); }
+  #size-range::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 22px; height: 22px; margin-top: -9px;
+    border-radius: 50%; background: var(--tomato); border: 3px solid var(--paper); box-shadow: 0 1px 3px rgba(27,21,18,.4);
+  }
+  #size-range::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: var(--tomato); border: 3px solid var(--paper); }
+
   .sep { width: 2px; align-self: stretch; margin: 6px 2px; background: rgba(27,21,18,.12); border-radius: 2px; flex: none; }
   .size {
     flex: 1 1 0;
@@ -862,34 +903,68 @@
   </div>
 
   <div class="tools" id="tools" aria-label="Drawing tools">
-    <div class="tool-row" id="tool-row">
-      <button class="tool" data-tool="pen" aria-pressed="true" aria-label="Pen" title="Pen">
+    <div class="brush-strip" id="tool-row" role="group" aria-label="Brushes">
+      <button class="tool brush" data-tool="pen" aria-pressed="true" aria-label="Pen" title="Pen">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M4 20l1-4.5L16 4.5l3.5 3.5L8.5 19 4 20z"/><path d="M14 6.5l3.5 3.5"/></svg>
       </button>
-      <button class="tool" data-tool="marker" aria-pressed="false" aria-label="Marker" title="Marker">
+      <button class="tool brush" data-tool="fine" aria-pressed="false" aria-label="Fine liner" title="Fine liner">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M5 19l1.5-.5L18 7l-1-1L5.5 17.5 5 19z"/><path d="M15.5 4.5l4 4" stroke-width="2.6"/><path d="M3 21l2-2"/></svg>
+      </button>
+      <button class="tool brush" data-tool="marker" aria-pressed="false" aria-label="Marker" title="Marker">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M14 4l6 6-8 8H8v-4l6-10z"/><path d="M8 18l-3 3h6"/><path d="M11 9l4 4"/></svg>
       </button>
-      <button class="tool" data-tool="highlighter" aria-pressed="false" aria-label="Highlighter" title="Highlighter">
+      <button class="tool brush" data-tool="highlighter" aria-pressed="false" aria-label="Highlighter" title="Highlighter">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M9 14l-2 2v3h3l2-2"/><path d="M9 14l7.5-9.5 3 3L12 17"/><path d="M3 21h8" stroke-width="3" opacity=".5"/></svg>
       </button>
-      <button class="tool" data-tool="spray" aria-pressed="false" aria-label="Spray" title="Spray">
+      <button class="tool brush" data-tool="pencil" aria-pressed="false" aria-label="Pencil" title="Pencil">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M4 20l1.2-4.6L15.8 4.8a1.6 1.6 0 012.3 0l1.1 1.1a1.6 1.6 0 010 2.3L8.6 18.8 4 20z"/><path d="M5.2 15.4l3.4 3.4"/><path d="M4 20l1.5-.4-1.1-1.1z" fill="currentColor"/></svg>
+      </button>
+      <button class="tool brush" data-tool="crayon" aria-pressed="false" aria-label="Crayon" title="Crayon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M7 21l-3-3 9.5-9.5 3 3L7 21z"/><path d="M13.5 8.5l3-3 3 3-3 3"/><path d="M16.5 5.5l2-2 2 2-2 2"/><path d="M7.5 14.5l2 2" opacity=".55"/></svg>
+      </button>
+      <button class="tool brush" data-tool="water" aria-pressed="false" aria-label="Watercolour" title="Watercolour">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M12 3c3.5 4.2 5.5 7.3 5.5 10a5.5 5.5 0 01-11 0c0-2.7 2-5.8 5.5-10z"/><path d="M9.5 14.5a2.5 2.5 0 002.5 2.5" opacity=".6"/></svg>
+      </button>
+      <button class="tool brush" data-tool="calligraphy" aria-pressed="false" aria-label="Calligraphy" title="Calligraphy">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M12 3l5 7-5 11-5-11 5-7z"/><path d="M12 10v5"/><circle cx="12" cy="10" r="1" fill="currentColor"/></svg>
+      </button>
+      <button class="tool brush" data-tool="neon" aria-pressed="false" aria-label="Neon" title="Neon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M4 16c3-6 5 2 8-4s5 2 8-4"/><path d="M4 16c3-6 5 2 8-4s5 2 8-4" stroke-width="5" opacity=".25"/></svg>
+      </button>
+      <button class="tool brush" data-tool="spray" aria-pressed="false" aria-label="Spray" title="Spray">
         <svg viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="10" width="7" height="11" rx="1.5"/><rect x="5.5" y="6.5" width="4" height="3.5" rx="1"/><circle cx="15" cy="7" r="1.1"/><circle cx="18.5" cy="5" r="1.1"/><circle cx="18" cy="9.5" r="1.1"/><circle cx="21" cy="7.5" r="1"/><circle cx="21" cy="12" r="1"/><circle cx="15.5" cy="11.5" r=".9"/></svg>
       </button>
-      <button class="tool" data-tool="hearts" aria-pressed="false" aria-label="Heart stamps" title="Heart stamps">
+      <button class="tool brush" data-tool="hearts" aria-pressed="false" aria-label="Heart stamps" title="Heart stamps">
         <svg viewBox="0 0 24 24"><use href="#heart-shape" fill="currentColor" transform="translate(1 4) scale(.62)"/><use href="#heart-shape" fill="currentColor" transform="translate(11 1) scale(.5)" opacity=".7"/><use href="#heart-shape" fill="currentColor" transform="translate(12 13) scale(.42)" opacity=".5"/></svg>
+      </button>
+      <button class="tool brush" data-tool="stars" aria-pressed="false" aria-label="Star stamps" title="Star stamps">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 3l1.6 3.4 3.7.4-2.8 2.5.8 3.7L8 11.2l-3.3 1.8.8-3.7L2.7 6.8l3.7-.4z"/><path d="M17 11l1.2 2.6 2.8.3-2.1 1.9.6 2.8-2.5-1.4-2.5 1.4.6-2.8-2.1-1.9 2.8-.3z" opacity=".7"/></svg>
+      </button>
+    </div>
+    <div class="size-row" id="size-row">
+      <span class="brush-name" id="brush-name">Pen</span>
+      <input type="range" id="size-range" min="1" max="40" step="1" value="6" aria-label="Brush size">
+      <span class="size-preview" aria-hidden="true"><i id="size-dot"></i></span>
+      <span class="fill-hint">Tap an area to fill it</span>
+    </div>
+    <div class="tool-row">
+      <button class="tool" data-tool="bucket" aria-pressed="false" aria-label="Fill bucket" title="Fill bucket">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M5 11l7-7 7 7-7 7-7-7z"/><path d="M5 11h14"/><path d="M19.5 14.5s1.8 2.2 1.8 3.4a1.8 1.8 0 01-3.6 0c0-1.2 1.8-3.4 1.8-3.4z" fill="currentColor"/></svg>
       </button>
       <button class="tool" data-tool="eraser" aria-pressed="false" aria-label="Eraser" title="Eraser">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M9 20l-5-5 10-10 7 7-8 8H9z"/><path d="M9 10l7 7"/><path d="M13 20h8"/></svg>
       </button>
-    </div>
-    <div class="tool-row">
-      <button class="size" data-size="3" aria-pressed="false" aria-label="Thin" title="Thin"><i style="--d:5px"></i></button>
-      <button class="size" data-size="6" aria-pressed="true" aria-label="Medium" title="Medium"><i style="--d:10px"></i></button>
-      <button class="size" data-size="12" aria-pressed="false" aria-label="Thick" title="Thick"><i style="--d:17px"></i></button>
-      <span class="sep" aria-hidden="true"></span>
       <button class="tool rainbow" id="rainbow-btn" aria-pressed="false" aria-label="Rainbow ink" title="Rainbow ink">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 17a9 9 0 0118 0"/><path d="M6.5 17a5.5 5.5 0 0111 0"/><path d="M10 17a2 2 0 014 0"/></svg>
       </button>
+      <span class="sep" aria-hidden="true"></span>
+      <button class="tool orient" data-orient="h" aria-pressed="true" aria-label="Landscape canvas" title="Landscape">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3" y="7" width="18" height="11" rx="1.5"/></svg>
+      </button>
+      <button class="tool orient" data-orient="v" aria-pressed="false" aria-label="Portrait canvas" title="Portrait">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="6.5" y="3" width="11" height="18" rx="1.5"/></svg>
+      </button>
+      <span class="sep" aria-hidden="true"></span>
       <button class="tool" id="undo-btn" aria-label="Undo" title="Undo" disabled>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 010 11H11"/></svg>
       </button>
@@ -1147,7 +1222,8 @@ $('tabs').addEventListener('click', e => {
   if (!btn || btn.dataset.type === selectedType) return;
   selectedType = btn.dataset.type;
   document.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-pressed', String(b === btn)));
-  document.body.className = 'mode-' + selectedType;
+  document.body.className = 'mode-' + selectedType + (orient === 'v' ? ' draw-portrait' : '');
+  if (selectedType === 'draw') requestAnimationFrame(updateSizeDot);
   refreshPreview(true);
   if (selectedType === 'papoi' && !papoiGif) loadPapoiGif();
 });
@@ -1186,13 +1262,21 @@ function setColor(c, fromCustom) {
   custom.setAttribute('aria-pressed', String(!!fromCustom));
   if (!fromCustom) $('custom-color').value = c;
   if (drawState.rainbow && !fromCustom) setRainbow(false);
+  updateSizeDot();
   refreshPreview(false);
 }
 
 /* ============================================================
    Drawing
+   Brushes come in a few kinds:
+   - smooth: drawn as one curve on a live layer, then stamped down
+   - stamp:  textured dabs along the path (pencil, crayon, watercolour)
+   - nib / neon / spray / stamps / eraser: drawn segment by segment
+   - fill:   the paint bucket
    ============================================================ */
-const CW = 900, CH = 600;
+const SIZES = { h: [900, 600], v: [600, 900] };
+let orient = 'h';
+let CW = 900, CH = 600;
 const canvas = $('draw-canvas');
 const live = $('draw-live');
 canvas.width = live.width = CW;
@@ -1204,13 +1288,52 @@ const drawState = { tool: 'pen', size: 6, rainbow: false, hue: 0, inked: false }
 const undoStack = [];
 const UNDO_MAX = 15;
 
-const TOOLS = {
-  pen:         { width: s => s * 1.8, alpha: 1,   blend: 'source-over', live: true },
-  marker:      { width: s => s * 3.6, alpha: .92, blend: 'source-over', live: true },
-  highlighter: { width: s => s * 6,   alpha: .38, blend: 'multiply',    live: true },
-  spray:       { width: s => s * 5 },
-  hearts:      { width: s => s * 4 },
-  eraser:      { width: s => s * 6 }
+// cheap, repeatable "paper grain" so crayon texture doesn't shimmer
+function grain(x, y) {
+  let h = (Math.floor(x) * 374761393 + Math.floor(y) * 668265263) | 0;
+  h = (h ^ (h >>> 13)) * 1274126177;
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967295;
+}
+
+const BRUSHES = {
+  pen:         { name: 'Pen',          kind: 'smooth', width: s => s,                  alpha: 1 },
+  fine:        { name: 'Fine liner',   kind: 'smooth', width: s => Math.max(1, s * .35), alpha: 1 },
+  marker:      { name: 'Marker',       kind: 'smooth', width: s => s * 2.4,            alpha: .9 },
+  highlighter: { name: 'Highlighter',  kind: 'smooth', width: s => s * 4,              alpha: .35, blend: 'multiply' },
+  pencil:      { name: 'Pencil',       kind: 'stamp',  width: s => Math.max(1.5, s * .8), spacing: .35,
+    stamp(c, x, y, w) {
+      c.globalAlpha = .6;
+      const n = Math.ceil(w * 1.3);
+      for (let i = 0; i < n; i++) {
+        const a = Math.random() * 6.283, d = (Math.random() + Math.random()) * .5 * w / 2;
+        c.fillRect(x + Math.cos(a) * d, y + Math.sin(a) * d, 1.4, 1.4);
+      }
+    } },
+  crayon:      { name: 'Crayon',       kind: 'stamp',  width: s => s * 2, spacing: .22,
+    stamp(c, x, y, w) {
+      c.globalAlpha = .8;
+      const n = Math.ceil(w * 1.6);
+      for (let i = 0; i < n; i++) {
+        const a = Math.random() * 6.283, d = Math.sqrt(Math.random()) * w / 2;
+        const px = x + Math.cos(a) * d, py = y + Math.sin(a) * d;
+        if (grain(px / 2, py / 2) < .38) continue; // let the paper show through
+        c.fillRect(px, py, 2, 2);
+      }
+    } },
+  water:       { name: 'Watercolour',  kind: 'stamp',  width: s => s * 3.5, spacing: .12, blend: 'multiply',
+    stamp(c, x, y, w) {
+      c.globalAlpha = .045;
+      c.beginPath();
+      c.arc(x, y, (w / 2) * (.85 + Math.random() * .3), 0, 6.283);
+      c.fill();
+    } },
+  calligraphy: { name: 'Calligraphy',  kind: 'nib',    width: s => s * 2.2 },
+  neon:        { name: 'Neon',         kind: 'neon',   width: s => Math.max(2, s * .9) },
+  spray:       { name: 'Spray',        kind: 'spray',  width: s => s * 4 },
+  hearts:      { name: 'Hearts',       kind: 'stamps', shape: 'heart', width: s => s * 3 },
+  stars:       { name: 'Stars',        kind: 'stamps', shape: 'star',  width: s => s * 3 },
+  eraser:      { name: 'Eraser',       kind: 'eraser', width: s => s * 3 },
+  bucket:      { name: 'Fill',         kind: 'fill',   width: () => 0 }
 };
 
 function strokeColor() {
@@ -1236,25 +1359,169 @@ function tracePath(c, pts) {
   c.lineTo(last.x, last.y);
 }
 
-function heartAt(c, x, y, s, color, angle) {
+const HEART = new Path2D('M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z');
+const STAR = new Path2D('M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6-4.9-4.6 6.6-.8z');
+function shapeAt(c, shape, x, y, s, color, angle) {
   c.save();
   c.translate(x, y);
   c.rotate(angle);
   c.scale(s / 24, s / 24);
   c.translate(-12, -12);
   c.fillStyle = color;
-  c.fill(new Path2D('M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z'));
+  c.fill(shape === 'star' ? STAR : HEART);
   c.restore();
 }
+// kept for anything that still calls it
+function heartAt(c, x, y, s, color, angle) { shapeAt(c, 'heart', x, y, s, color, angle); }
 
 function spray(p, w) {
   const n = Math.round(w * .9);
+  const dot = Math.max(1.2, Math.min(3, w / 14));
   ctx.fillStyle = strokeColor();
   for (let i = 0; i < n; i++) {
     const a = Math.random() * Math.PI * 2;
     const d = Math.sqrt(Math.random()) * w;
-    ctx.fillRect(p.x + Math.cos(a) * d, p.y + Math.sin(a) * d, 3, 3);
+    ctx.fillRect(p.x + Math.cos(a) * d, p.y + Math.sin(a) * d, dot, dot);
   }
+}
+
+/* ---------- segment painters (draw straight onto the canvas) ---------- */
+let stampCarry = 0; // distance left over between dabs, so spacing stays even
+function paintSegment(a, b, b0, w, pressure) {
+  const color = strokeColor();
+  switch (b0.kind) {
+    case 'smooth': { // only used with rainbow ink
+      ctx.save();
+      ctx.globalAlpha = b0.alpha; ctx.globalCompositeOperation = b0.blend || 'source-over';
+      ctx.strokeStyle = color; ctx.lineWidth = w; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+      ctx.restore();
+      break;
+    }
+    case 'stamp': {
+      const dist = Math.hypot(b.x - a.x, b.y - a.y);
+      const step = Math.max(.75, w * b0.spacing);
+      ctx.save();
+      ctx.fillStyle = color;
+      ctx.globalCompositeOperation = b0.blend || 'source-over';
+      let t = stampCarry;
+      if (dist === 0 && t === 0) b0.stamp(ctx, a.x, a.y, w);
+      while (t <= dist) {
+        const k = dist ? t / dist : 0;
+        b0.stamp(ctx, a.x + (b.x - a.x) * k, a.y + (b.y - a.y) * k, w);
+        t += step;
+      }
+      stampCarry = t - dist;
+      ctx.restore();
+      break;
+    }
+    case 'nib': { // flat pen held at 45 degrees: thick one way, thin the other
+      const h = (w * pressure) / 2, nx = Math.cos(-.785) * h, ny = Math.sin(-.785) * h;
+      ctx.save();
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(a.x + nx, a.y + ny); ctx.lineTo(b.x + nx, b.y + ny);
+      ctx.lineTo(b.x - nx, b.y - ny); ctx.lineTo(a.x - nx, a.y - ny);
+      ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = color; ctx.lineWidth = 1; ctx.stroke(); // close hairline gaps
+      ctx.restore();
+      break;
+    }
+    case 'neon': {
+      ctx.save();
+      ctx.lineCap = 'round';
+      ctx.shadowColor = color; ctx.shadowBlur = w * 2.5;
+      ctx.strokeStyle = color; ctx.lineWidth = w;
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = Math.max(1, w * .35);
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+      ctx.restore();
+      break;
+    }
+    case 'spray': spray(b, w); break;
+    case 'stamps': {
+      if (Math.hypot(b.x - lastStamp.x, b.y - lastStamp.y) > w * 2.6) {
+        shapeAt(ctx, b0.shape, b.x, b.y, w * (1.6 + Math.random() * 1.2), color, (Math.random() - .5) * .8);
+        lastStamp = b;
+      }
+      break;
+    }
+    case 'eraser': {
+      ctx.save(); ctx.globalCompositeOperation = 'destination-out';
+      ctx.lineWidth = w; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x + .01, b.y); ctx.stroke();
+      ctx.restore();
+      break;
+    }
+  }
+}
+
+/* ---------- paint bucket ---------- */
+const probe = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
+function rgbOf(color) {
+  probe.clearRect(0, 0, 1, 1);
+  probe.fillStyle = color; probe.fillRect(0, 0, 1, 1);
+  const d = probe.getImageData(0, 0, 1, 1).data;
+  return [d[0], d[1], d[2]];
+}
+function floodFill(x0, y0, color) {
+  x0 = Math.floor(x0); y0 = Math.floor(y0);
+  if (x0 < 0 || y0 < 0 || x0 >= CW || y0 >= CH) return false;
+  const img = ctx.getImageData(0, 0, CW, CH);
+  const d = img.data;
+  const [fr, fg, fb] = rgbOf(color);
+  const i0 = (y0 * CW + x0) * 4;
+  const tr = d[i0], tg = d[i0 + 1], tb = d[i0 + 2], ta = d[i0 + 3];
+  if (ta === 255 && Math.abs(tr - fr) + Math.abs(tg - fg) + Math.abs(tb - fb) < 6) return false; // already that colour
+  const TOL = 110;
+  const same = i => {
+    const a = d[i + 3];
+    if (ta < 20) return a < 20 + 40;                 // filling empty paper: stop at ink
+    return Math.abs(d[i] - tr) + Math.abs(d[i + 1] - tg) + Math.abs(d[i + 2] - tb) + Math.abs(a - ta) <= TOL;
+  };
+  const filled = new Uint8Array(CW * CH);
+  const stack = [x0, y0];
+  while (stack.length) {
+    const y = stack.pop(), x = stack.pop();
+    let lx = x;
+    while (lx >= 0 && !filled[y * CW + lx] && same((y * CW + lx) * 4)) lx--;
+    lx++;
+    let up = false, down = false;
+    for (let cx = lx; cx < CW; cx++) {
+      const p = y * CW + cx;
+      if (filled[p] || !same(p * 4)) break;
+      filled[p] = 1;
+      if (y > 0) {
+        const q = p - CW, ok = !filled[q] && same(q * 4);
+        if (ok && !up) { stack.push(cx, y - 1); up = true; } else if (!ok) up = false;
+      }
+      if (y < CH - 1) {
+        const q = p + CW, ok = !filled[q] && same(q * 4);
+        if (ok && !down) { stack.push(cx, y + 1); down = true; } else if (!ok) down = false;
+      }
+    }
+  }
+  // paint the region, then tuck the colour under the soft edge of the lines around it
+  for (let p = 0; p < filled.length; p++) {
+    if (!filled[p]) continue;
+    const i = p * 4;
+    d[i] = fr; d[i + 1] = fg; d[i + 2] = fb; d[i + 3] = 255;
+  }
+  for (let y = 0; y < CH; y++) for (let x = 0; x < CW; x++) {
+    const p = y * CW + x;
+    if (filled[p]) continue;
+    const near = (x > 0 && filled[p - 1]) || (x < CW - 1 && filled[p + 1]) || (y > 0 && filled[p - CW]) || (y < CH - 1 && filled[p + CW]);
+    if (!near) continue;
+    const i = p * 4, a = d[i + 3] / 255;
+    if (a >= .98) continue;
+    d[i] = Math.round(d[i] * a + fr * (1 - a));
+    d[i + 1] = Math.round(d[i + 1] * a + fg * (1 - a));
+    d[i + 2] = Math.round(d[i + 2] * a + fb * (1 - a));
+    d[i + 3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+  return true;
 }
 
 let pts = [];
@@ -1279,89 +1546,96 @@ function syncDrawButtons() {
   $('clear-btn').disabled = !drawState.inked;
 }
 
+const usesLive = b => b.kind === 'neon' || (b.kind === 'smooth' && !drawState.rainbow);
+const pressureOf = e => (e.pointerType === 'pen' && e.pressure > 0 ? .35 + e.pressure * .9 : 1);
+
 canvas.addEventListener('pointerdown', e => {
   if (e.button > 0) return;
   e.preventDefault();
+  const b0 = BRUSHES[drawState.tool];
+  const p = pos(e);
+
+  if (b0.kind === 'fill') {
+    pushUndo();
+    if (floodFill(p.x, p.y, strokeColor())) setInked(true);
+    else { undoStack.pop(); syncDrawButtons(); }
+    return;
+  }
+
   try { canvas.setPointerCapture(e.pointerId); } catch {}
   active = true;
   pushUndo();
-  const p = pos(e);
-  const t = TOOLS[drawState.tool];
-  const w = t.width(drawState.size);
+  const w = b0.width(drawState.size);
   pts = [p];
   lastPt = p;
+  stampCarry = 0;
   ctx.lineCap = ctx.lineJoin = lctx.lineCap = lctx.lineJoin = 'round';
 
-  if (drawState.tool === 'spray') spray(p, w);
-  else if (drawState.tool === 'hearts') { heartAt(ctx, p.x, p.y, w * 2.2, strokeColor(), (Math.random() - .5) * .6); lastStamp = p; }
-  else if (drawState.tool === 'eraser') {
-    ctx.save(); ctx.globalCompositeOperation = 'destination-out';
-    ctx.lineWidth = w; tracePath(ctx, pts); ctx.stroke(); ctx.restore();
-  } else if (drawState.rainbow) {
-    ctx.strokeStyle = strokeColor(); ctx.globalAlpha = t.alpha; ctx.lineWidth = t.width(drawState.size);
-    ctx.globalCompositeOperation = t.blend; tracePath(ctx, pts); ctx.stroke();
-    ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
-  } else {
+  if (b0.kind === 'stamps') {
+    shapeAt(ctx, b0.shape, p.x, p.y, w * 2.2, strokeColor(), (Math.random() - .5) * .6);
+    lastStamp = p;
+  } else if (usesLive(b0)) {
     renderLive();
+  } else {
+    paintSegment(p, p, b0, w * (b0.kind === 'nib' ? pressureOf(e) : 1), pressureOf(e));
   }
-  if (drawState.tool !== 'eraser') setInked(true);
+  if (b0.kind !== 'eraser') setInked(true);
 });
 
 canvas.addEventListener('pointermove', e => {
   if (!active) return;
   e.preventDefault();
   const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
-  const t = TOOLS[drawState.tool];
-  const w = t.width(drawState.size);
+  const b0 = BRUSHES[drawState.tool];
+  const w = b0.width(drawState.size);
   for (const ev of events.length ? events : [e]) {
     const p = pos(ev);
-    if (drawState.tool === 'spray') spray(p, w);
-    else if (drawState.tool === 'hearts') {
-      if (Math.hypot(p.x - lastStamp.x, p.y - lastStamp.y) > w * 2.6) {
-        heartAt(ctx, p.x, p.y, w * (1.6 + Math.random() * 1.2), strokeColor(), (Math.random() - .5) * .8);
-        lastStamp = p;
-      }
-    } else if (drawState.tool === 'eraser') {
-      ctx.save(); ctx.globalCompositeOperation = 'destination-out'; ctx.lineWidth = w;
-      ctx.beginPath(); ctx.moveTo(lastPt.x, lastPt.y); ctx.lineTo(p.x, p.y); ctx.stroke(); ctx.restore();
-    } else if (drawState.rainbow) {
-      ctx.strokeStyle = strokeColor(); ctx.globalAlpha = t.alpha; ctx.lineWidth = w;
-      ctx.globalCompositeOperation = t.blend;
-      ctx.beginPath(); ctx.moveTo(lastPt.x, lastPt.y); ctx.lineTo(p.x, p.y); ctx.stroke();
-      ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
-    } else {
-      pts.push(p);
-    }
+    if (usesLive(b0)) pts.push(p);
+    else paintSegment(lastPt, p, b0, w, pressureOf(ev));
     lastPt = p;
   }
-  if (TOOLS[drawState.tool].live && !drawState.rainbow) renderLive();
+  if (usesLive(b0)) renderLive();
 });
 
 function renderLive() {
-  const t = TOOLS[drawState.tool];
+  const b0 = BRUSHES[drawState.tool];
   lctx.clearRect(0, 0, CW, CH);
+  const w = b0.width(drawState.size);
+  if (b0.kind === 'neon') { // one glowing tube with a bright core
+    lctx.save();
+    lctx.shadowColor = selectedColor; lctx.shadowBlur = w * 2.5;
+    lctx.strokeStyle = selectedColor; lctx.lineWidth = w;
+    tracePath(lctx, pts); lctx.stroke();
+    lctx.stroke(); // second pass makes the glow stronger
+    lctx.shadowBlur = 0;
+    lctx.strokeStyle = 'rgba(255,255,255,.85)'; lctx.lineWidth = Math.max(1, w * .35);
+    tracePath(lctx, pts); lctx.stroke();
+    lctx.restore();
+    live.style.opacity = 1; live.style.mixBlendMode = 'normal';
+    return;
+  }
   lctx.strokeStyle = selectedColor;
-  lctx.lineWidth = t.width(drawState.size);
+  lctx.lineWidth = w;
   tracePath(lctx, pts);
   lctx.stroke();
-  live.style.opacity = t.alpha;
-  live.style.mixBlendMode = t.blend === 'multiply' ? 'multiply' : 'normal';
+  live.style.opacity = b0.alpha;
+  live.style.mixBlendMode = b0.blend === 'multiply' ? 'multiply' : 'normal';
 }
 
 function endStroke(e) {
   if (!active) return;
   active = false;
   try { canvas.releasePointerCapture(e.pointerId); } catch {}
-  const t = TOOLS[drawState.tool];
-  if (t.live && !drawState.rainbow) {
+  const b0 = BRUSHES[drawState.tool];
+  if (usesLive(b0)) {
     ctx.save();
-    ctx.globalAlpha = t.alpha;
-    ctx.globalCompositeOperation = t.blend;
+    ctx.globalAlpha = b0.alpha || 1;
+    ctx.globalCompositeOperation = b0.blend || 'source-over';
     ctx.drawImage(live, 0, 0);
     ctx.restore();
     lctx.clearRect(0, 0, CW, CH);
   }
-  if (drawState.tool === 'eraser') setInked(!isCanvasEmpty());
+  if (b0.kind === 'eraser') setInked(!isCanvasEmpty());
 }
 canvas.addEventListener('pointerup', endStroke);
 canvas.addEventListener('pointercancel', endStroke);
@@ -1391,21 +1665,67 @@ $('clear-btn').addEventListener('click', () => {
   toast('Cleared. Undo brings it back.');
 });
 
-$('tool-row').addEventListener('click', e => {
-  const b = e.target.closest('.tool[data-tool]');
-  if (!b) return;
-  drawState.tool = b.dataset.tool;
-  document.querySelectorAll('.tool[data-tool]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+/* ---------- picking brushes and size ---------- */
+function selectTool(id) {
+  drawState.tool = id;
+  document.querySelectorAll('[data-tool]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.tool === id)));
+  $('brush-name').textContent = BRUSHES[id].name;
+  $('size-row').classList.toggle('is-fill', id === 'bucket');
+  canvas.style.cursor = id === 'bucket' ? 'cell' : 'crosshair';
+  updateSizeDot();
+}
+$('tools').addEventListener('click', e => {
+  const b = e.target.closest('[data-tool]');
+  if (b) selectTool(b.dataset.tool);
 });
-document.querySelectorAll('.size').forEach(b => b.addEventListener('click', () => {
-  drawState.size = +b.dataset.size;
-  document.querySelectorAll('.size').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
-}));
+
+function updateSizeDot() {
+  const b0 = BRUSHES[drawState.tool];
+  const r = canvas.getBoundingClientRect();
+  const scale = r.width ? r.width / CW : .4;
+  const px = Math.max(1, Math.min(44, b0.width(drawState.size) * scale));
+  const dot = $('size-dot');
+  dot.style.width = dot.style.height = px + 'px';
+  dot.style.background = drawState.rainbow
+    ? 'conic-gradient(#e04a2a, #f2c230, #7a9a3a, #2e7fa4, #5b4a8a, #c94060, #e04a2a)'
+    : selectedColor;
+  dot.style.opacity = b0.alpha && b0.alpha < 1 ? Math.max(.4, b0.alpha) : 1;
+}
+$('size-range').addEventListener('input', e => {
+  drawState.size = +e.target.value;
+  updateSizeDot();
+});
+
 function setRainbow(v) {
   drawState.rainbow = v;
   $('rainbow-btn').setAttribute('aria-pressed', String(v));
+  updateSizeDot();
 }
 $('rainbow-btn').addEventListener('click', () => setRainbow(!drawState.rainbow));
+
+/* ---------- landscape / portrait ---------- */
+function setOrientation(o) {
+  if (o === orient) return;
+  const old = document.createElement('canvas');
+  old.width = CW; old.height = CH;
+  old.getContext('2d').drawImage(canvas, 0, 0);
+  orient = o;
+  [CW, CH] = SIZES[o];
+  canvas.width = live.width = CW;
+  canvas.height = live.height = CH;
+  if (drawState.inked) { // keep the drawing, fitted into the new shape
+    const sc = Math.min(CW / old.width, CH / old.height);
+    const w = old.width * sc, h = old.height * sc;
+    ctx.drawImage(old, (CW - w) / 2, (CH - h) / 2, w, h);
+  }
+  undoStack.length = 0;
+  syncDrawButtons();
+  document.body.classList.toggle('draw-portrait', o === 'v');
+  document.querySelectorAll('[data-orient]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.orient === o)));
+  requestAnimationFrame(updateSizeDot);
+}
+document.querySelectorAll('[data-orient]').forEach(b => b.addEventListener('click', () => setOrientation(b.dataset.orient)));
+window.addEventListener('resize', updateSizeDot);
 
 // drawing on paper so it reads well when it lands
 async function drawingBase64() {
@@ -1448,7 +1768,7 @@ async function drawingDataUrl() {
   const b64 = await drawingBase64();
   const img = new Image();
   await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = 'data:image/jpeg;base64,' + b64; });
-  return shrinkToDataUrl(img, CW, CH, CW);
+  return shrinkToDataUrl(img, CW, CH, Math.max(CW, CH));
 }
 async function photoDataUrl(file) {
   try {
@@ -2227,6 +2547,7 @@ if (!myName) setTimeout(askName, 900);
 
 refreshPreview(false);
 syncDrawButtons();
+selectTool('pen');
 // preview the receive card without sending anything: open the app with ?demo
 if (new URLSearchParams(location.search).has('demo')) {
   window.demoReceive = showReceive;
