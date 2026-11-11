@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Widget test</title>
+<style>
+  body { margin: 0; padding: 20px 16px; background: #f2e8d5; color: #1b1512; font: 16px/1.5 Georgia, serif; }
+  h1 { font-size: 24px; margin: 0 0 6px; }
+  p { margin: 0 0 14px; color: #5c4f45; }
+  button { width: 100%; padding: 14px; margin: 0 0 10px; border: 0; border-radius: 8px; font: bold 17px Georgia, serif; color: #faf3e3; background: #e04a2a; }
+  button.read { background: #2e7fa4; }
+  pre { white-space: pre-wrap; word-break: break-word; background: #faf3e3; padding: 12px; border-radius: 8px; font: 13px/1.4 ui-monospace, Menlo, monospace; min-height: 60px; }
+</style>
+</head>
+<body>
+  <h1>Widget test</h1>
+  <p>This does exactly what the Android widget's button does. Take a screenshot of the result and send it to Claude.</p>
+  <p>Name: <b id="name"></b></p>
+  <button class="read" id="read">1. Test reading</button>
+  <button id="send">2. Send a test kiss</button>
+  <pre id="out">Results show here.</pre>
+<script>
+  let name = '';
+  try { name = localStorage.getItem('myName') || ''; } catch {}
+  if (!name) name = prompt('Your name, as in the app') || '';
+  document.getElementById('name').textContent = name || '(none)';
+  const out = document.getElementById('out');
+  async function call(label, url, opts) {
+    out.textContent = label + '…';
+    try {
+      const r = await fetch(url, opts);
+      const text = await r.text();
+      let body = text;
+      try { body = JSON.stringify(JSON.parse(text), null, 2); } catch {}
+      out.textContent = `${label}\nHTTP ${r.status}\n\n${body.slice(0, 3000)}`;
+    } catch (e) {
+      out.textContent = `${label}\nFailed: ${e.message}`;
+    }
+  }
+  document.getElementById('read').onclick = () =>
+    call('Reading', '/api/widget?name=' + encodeURIComponent(name));
+  document.getElementById('send').onclick = () =>
+    call('Sending', '/api/send', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ type: 'kiss', from: name }) });
+</script>
+</body>
+</html>
