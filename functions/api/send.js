@@ -16,21 +16,28 @@ export async function onRequestPost({ request, env }) {
   const ledger = await getDoc('kisses/_ledger');
   if (!from || !ledger?.sent || !(from in ledger.sent)) return json({ error: 'unknown name' }, 403);
 
+  let id;
   try {
-    const id = await createDoc('kisses', {
+    id = await createDoc('kisses', {
       type, color: COLORS[type], location: null, mediaUrl: null,
       from: 'widget-' + from, fromName: from, time: Date.now()
     });
-    await bumpLedger(from);
+  } catch (e) {
+    return json({ ok: false, error: 'saving failed: ' + e.message }, 502);
+  }
+  // the kiss is saved; the tab and the notification are extras that shouldn't undo it
+  let tabError = null;
+  try { await bumpLedger(from); } catch (e) { tabError = e.message; }
+  try {
     const pushed = await push(env, {
       sender: from,
       heading: `${from} sent you ${WORDS[type]}`,
       content: 'Open it to see. You owe one back.',
       url: new URL('/', request.url).toString()
     });
-    return json({ ok: true, id, pushed: pushed.ok });
+    return json({ ok: true, id, pushed: pushed.ok, tabError });
   } catch (e) {
-    return json({ ok: false, error: e.message }, 502);
+    return json({ ok: true, id, pushed: false, tabError, pushError: e.message });
   }
 }
 

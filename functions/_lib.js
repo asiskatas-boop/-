@@ -75,7 +75,10 @@ export async function bumpLedger(name) {
       }]
     })
   });
-  if (!r.ok) throw new Error(`ledger update failed (${r.status})`);
+  if (!r.ok) {
+    const out = await r.json().catch(() => ({}));
+    throw new Error(`tab update failed (${r.status}${out?.error?.message ? ': ' + out.error.message : ''})`);
+  }
 }
 
 // Debt for one person, the same rule as the app: everyone is measured against whoever sent the most.
