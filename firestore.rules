@@ -16,7 +16,13 @@ service cloud.firestore {
       allow create: if id != '_ledger'
         && request.resource.data.type in ['kiss', 'hug', 'papoi', 'draw']
         && request.resource.data.time is int
-        && request.resource.data.keys().hasOnly(['type', 'color', 'location', 'mediaUrl', 'from', 'fromName', 'time']);
+        && request.resource.data.keys().hasOnly(['type', 'color', 'location', 'mediaUrl', 'from', 'fromName', 'time', 'count'])
+        // sending many at once: only Papoi Biftekoulis, up to 999
+        && (!('count' in request.resource.data)
+            || (request.resource.data.count is int
+                && request.resource.data.count >= 2
+                && request.resource.data.count <= 999
+                && request.resource.data.fromName == 'Papoi Biftekoulis'));
       allow update, delete: if false;
     }
 

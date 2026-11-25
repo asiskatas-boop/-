@@ -6,6 +6,9 @@ const FIREBASE_KEY = 'AIzaSyBMsCKD2XexYnzfe1DXKF6mJMZ5P21k2Fw';
 const BASE = `https://firestore.googleapis.com/v1/projects/${PROJECT}/databases/(default)/documents`;
 export const DOC_ROOT = `projects/${PROJECT}/databases/(default)/documents`;
 export const WORDS = { kiss: 'a kiss', hug: 'a hug', papoi: 'a papoi', draw: 'a drawing' };
+export const PLURALS = { kiss: 'kisses', hug: 'hugs', papoi: 'papoia', draw: 'drawings' };
+// 'a kiss' or '50 kisses'
+export const what = (type, count) => (count > 1 ? `${count} ${PLURALS[type] || 'things'}` : (WORDS[type] || 'something'));
 
 export const json = (body, status = 200, extra = {}) =>
   new Response(JSON.stringify(body), {

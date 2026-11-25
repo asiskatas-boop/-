@@ -2,7 +2,7 @@
 // Looks the message or list item up in Firestore (so nobody can push made-up text),
 // then notifies everyone except whoever sent or added it.
 // Needs the secret ONESIGNAL_REST_API_KEY in Cloudflare Pages settings.
-import { json, getDoc, push, WORDS } from '../_lib.js';
+import { json, getDoc, push, what as describe } from '../_lib.js';
 
 export async function onRequestPost({ request, env }) {
   let body;
@@ -21,8 +21,9 @@ export async function onRequestPost({ request, env }) {
     msg = { sender: by, heading: `${by || 'Someone'} added to the couch agenda`, content: String(doc.text || '').slice(0, 140), url };
   } else {
     const sender = String(doc.fromName || '').slice(0, 20);
-    const what = WORDS[doc.type] || 'something';
-    msg = { sender, heading: sender ? `${sender} sent you ${what}` : `You got ${what}`, content: 'Open it to see. You owe one back.', url };
+    const n = Number(doc.count) > 1 ? Number(doc.count) : 1;
+    const what = describe(doc.type, n);
+    msg = { sender, heading: sender ? `${sender} sent you ${what}` : `You got ${what}`, content: n > 1 ? `Open it to see. You owe ${n} back.` : 'Open it to see. You owe one back.', url };
   }
   const out = await push(env, msg);
   return json(out, out.ok ? 200 : (out.error ? 500 : 502));

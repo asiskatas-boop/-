@@ -537,6 +537,42 @@
     100% { transform: translate(var(--tx), var(--ty)) rotate(var(--rot)) scale(1); opacity: 0; }
   }
 
+  /* ---- send many at once (one sender only) ---- */
+  .multi { display: flex; flex-direction: column; gap: 10px; }
+  .multi .counts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .multi .counts button {
+    padding: 10px 0;
+    background: var(--paper);
+    border-radius: var(--r-sm);
+    box-shadow: var(--lift);
+    font-family: var(--mono); font-weight: 700; font-size: 16px;
+    transition: transform .2s var(--spring), background-color .15s, color .15s;
+  }
+  .multi .counts button:nth-child(odd) { transform: rotate(-1.5deg); }
+  .multi .counts button:nth-child(even) { transform: rotate(1.5deg); }
+  .multi .counts button[aria-pressed="true"] { background: var(--ink); color: var(--paper); transform: rotate(0) translateY(-2px); }
+  .multi .counts button:active { transform: scale(.92); }
+  #payoff-btn {
+    padding: 12px 14px;
+    background: var(--banana);
+    border-radius: var(--r-sm);
+    box-shadow: 3px 4px 0 var(--ink);
+    font-family: var(--serif); font-weight: 900; font-size: 17px;
+    transform: rotate(-.8deg);
+    transition: transform .2s var(--spring), box-shadow .15s;
+  }
+  #payoff-btn:active { transform: translate(2px, 3px); box-shadow: 1px 1px 0 var(--ink); }
+  .times {
+    position: absolute; top: 14px; right: 14px;
+    padding: 4px 10px;
+    background: var(--tomato); color: var(--paper);
+    font-family: var(--mono); font-weight: 700; font-size: 22px;
+    border-radius: var(--r-sm);
+    transform: rotate(8deg);
+    box-shadow: 2px 3px 0 var(--ink);
+  }
+  #receive-view.enter .times { animation: bump .7s .45s var(--spring) both; }
+
   /* ---- the tab: who owes whom ---- */
   .ledger { position: relative; margin: 0 var(--pad) 24px; }
   .ledger-shadow { filter: drop-shadow(0 6px 6px rgba(27,21,18,.2)); }
@@ -1017,6 +1053,15 @@
   </section>
 
   <div class="actions">
+    <div class="multi hidden" id="multi">
+      <div class="counts" role="group" aria-label="How many to send" id="counts">
+        <button data-count="1" aria-pressed="true">×1</button>
+        <button data-count="5" aria-pressed="false">×5</button>
+        <button data-count="10" aria-pressed="false">×10</button>
+        <button data-count="50" aria-pressed="false">×50</button>
+      </div>
+      <button id="payoff-btn" class="hidden"></button>
+    </div>
     <div class="send-wrap" id="send-wrap">
       <button id="send-btn">Send the kiss</button>
     </div>
@@ -1035,6 +1080,7 @@
     <img class="media hidden" id="receive-media" alt="">
     <p class="caption" id="receive-caption"></p>
     <p class="owe-line" id="receive-owe"></p>
+    <span class="times hidden" id="receive-times"></span>
     <p class="meta" id="receive-meta"></p>
   </div>
   <span class="tape tl"></span>
@@ -1204,6 +1250,10 @@ let selectedFile = null;
 let sending = false;
 
 const typeWords = { kiss: 'kiss', hug: 'hug', papoi: 'papoi', draw: 'drawing' };
+const typePlurals = { kiss: 'kisses', hug: 'hugs', papoi: 'papoia', draw: 'drawings' };
+// Only this person gets the "send many at once" buttons.
+const BULK_SENDER = 'Papoi Biftekoulis';
+let sendCount = 1;
 
 function refreshPreview(animate) {
   const g = $('preview-glyph');
@@ -1211,8 +1261,40 @@ function refreshPreview(animate) {
     g.innerHTML = glyphMarkup(selectedType, selectedColor);
     if (animate) { g.classList.remove('swap'); void g.offsetWidth; g.classList.add('swap'); }
   }
-  $('send-btn').textContent = `Send the ${typeWords[selectedType]}`;
+  $('send-btn').textContent = sendCount > 1
+    ? `Send ${sendCount} ${typePlurals[selectedType]}`
+    : `Send the ${typeWords[selectedType]}`;
 }
+
+function canBulk() { return myName === BULK_SENDER && selectedType !== 'draw'; }
+function setCount(n) {
+  sendCount = canBulk() ? Math.max(1, Math.min(999, n)) : 1;
+  document.querySelectorAll('#counts button').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.count === sendCount)));
+  refreshPreview(false);
+}
+function myDebt() {
+  if (!myName || !ledgerLoaded) return 0;
+  return owesTable().find(r => r.name === myName)?.owes || 0;
+}
+function syncMulti() {
+  const on = canBulk();
+  $('multi').classList.toggle('hidden', !on);
+  if (!on && sendCount !== 1) setCount(1);
+  const owes = on ? myDebt() : 0;
+  const pay = $('payoff-btn');
+  pay.classList.toggle('hidden', owes < 1);
+  if (owes > 0) pay.textContent = `Pay off my debt: send ${owes} ${owes === 1 ? typeWords[selectedType] : typePlurals[selectedType]}`;
+}
+$('counts').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (b) setCount(+b.dataset.count);
+});
+$('payoff-btn').addEventListener('click', () => {
+  const owes = myDebt();
+  if (owes < 1) return;
+  setCount(owes);
+  $('send-btn').click();
+});
 
 /* ============================================================
    Tabs
@@ -1224,6 +1306,7 @@ $('tabs').addEventListener('click', e => {
   document.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-pressed', String(b === btn)));
   document.body.className = 'mode-' + selectedType + (orient === 'v' ? ' draw-portrait' : '');
   if (selectedType === 'draw') requestAnimationFrame(updateSizeDot);
+  syncMulti();
   refreshPreview(true);
   if (selectedType === 'papoi' && !papoiGif) loadPapoiGif();
 });
@@ -1967,17 +2050,18 @@ const firebaseReady = (async () => {
 /* ============================================================
    Confetti
    ============================================================ */
-function confetti(fromEl) {
+function confetti(fromEl, count = 1) {
   const r = fromEl.getBoundingClientRect();
   const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
   const palette = ['#e04a2a', '#2e7fa4', '#f2c230', '#faf3e3', '#c94060', '#d9c9a3', selectedColor];
-  for (let i = 0; i < 22; i++) {
+  const pieces = Math.min(22 + count, 90);
+  for (let i = 0; i < pieces; i++) {
     const b = document.createElement('span');
     const heart = i % 3 === 0;
     b.className = 'bit' + (heart ? ' heart' : '');
     const w = heart ? 20 : 6 + Math.random() * 10;
     const h = heart ? 18 : 4 + Math.random() * 14;
-    const a = (Math.PI * 2 * i) / 22 + (Math.random() - .5) * .5;
+    const a = (Math.PI * 2 * i) / pieces + (Math.random() - .5) * .5;
     const d = 90 + Math.random() * 140;
     b.style.cssText = `left:${cx - w / 2}px;top:${cy - h / 2}px;width:${w}px;height:${h}px;` +
       `background:${palette[i % palette.length]};animation-delay:${Math.random() * .12}s;` +
@@ -2002,10 +2086,11 @@ $('send-btn').addEventListener('click', async () => {
     return;
   }
 
+  const count = canBulk() ? sendCount : 1;
   sending = true;
   btn.disabled = true;
   btn.textContent = 'Sending…';
-  confetti(btn);
+  confetti(btn, count);
 
   try {
     if (!(await firebaseReady)) throw new Error('offline');
@@ -2049,11 +2134,13 @@ $('send-btn').addEventListener('click', async () => {
       fromName: myName,
       time: Date.now()
     };
+    if (count > 1) data.count = count;
 
     const ref = fs.doc(fs.collection(db, 'kisses'));
     markSeen(ref.id);
     await fs.setDoc(ref, data);
-    addToLedger(myName);
+    addToLedger(myName, count);
+    setCount(1);
     notifyOthers(ref.id);
 
     setPhoto(null);
@@ -2116,9 +2203,14 @@ function showReceive(k) {
   }
 
   const who = k.fromName && !mine ? ` from ${k.fromName}` : '';
+  const n = Number.isInteger(k.count) && k.count > 1 ? k.count : 1;
+  const many = `${n} ${typePlurals[type]}`;
   $('receive-caption').textContent = mine
-    ? `You sent a ${word}`
+    ? (n > 1 ? `You sent ${many}` : `You sent a ${word}`)
+    : n > 1 ? `${many}${who}`
     : (type === 'hug' ? `A big hug${who}` : `A ${word}${who}`);
+  $('receive-times').classList.toggle('hidden', n < 2);
+  $('receive-times').textContent = `×${n}`;
   receiveShownFor = k;
   $('receive-owe').textContent = oweLine(k);
 
@@ -2294,6 +2386,7 @@ function renderLedger() {
     <p class="verdict">${escapeHtml(verdict(rows))}</p>${rows.length > 2 ? '<p class="ledger-tip">Same person twice? Tap the extra name to fix it.</p>' : ''}`;
   body.querySelectorAll('.who').forEach(b => b.addEventListener('click', () => openFix(b.dataset.name)));
   rows.forEach(r => prevOwes[r.name] = r.owes);
+  syncMulti();
 }
 
 // what the receive card says about the debt after this message
@@ -2330,10 +2423,10 @@ function startLedger() {
   });
 }
 
-async function addToLedger(name) {
+async function addToLedger(name, n = 1) {
   try {
     await fs.setDoc(fs.doc(db, 'kisses', '_ledger'),
-      { sent: { [name]: fs.increment(1) }, updated: Date.now() }, { merge: true });
+      { sent: { [name]: fs.increment(n) }, updated: Date.now() }, { merge: true });
   } catch (err) {
     console.error('Ledger update failed:', err);
     toast('Sent, but the tab didn’t update.');
@@ -2363,6 +2456,7 @@ $('name-form').addEventListener('submit', e => {
   myName = n;
   store.set('myName', n);
   tagPush(n);
+  syncMulti();
   $('name-dialog').classList.add('hidden');
   renderLedger();
   const next = afterName; afterName = null;
@@ -2554,7 +2648,7 @@ if (new URLSearchParams(location.search).has('demo')) {
   window.demoUpload = async () => uploadToImgBB(await drawingBase64());
   window.demoInline = async () => { const u = await drawingDataUrl(); return u && { len: u.length, head: u.slice(0, 23) }; };
   window.demoLedger = (sent) => { ledger = sent; ledgerLoaded = true; renderLedger(); };
-  window.demoMe = (n) => { myName = n; renderLedger(); };
+  window.demoMe = (n) => { myName = n; renderLedger(); syncMulti(); };
   window.demoAgenda = (items) => { agenda = items; agendaLoaded = true; renderAgenda(); };
 }
 </script>

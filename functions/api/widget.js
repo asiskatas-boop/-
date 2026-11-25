@@ -1,7 +1,7 @@
 // GET /api/widget?name=Athinara
 // Everything a home-screen widget shows, in one small JSON:
 // your debt, the last message, the latest drawing and the open couch-agenda items.
-import { json, getDoc, runQuery, debtFor, WORDS } from '../_lib.js';
+import { json, getDoc, runQuery, debtFor, what } from '../_lib.js';
 
 export async function onRequestGet({ request }) {
   const url = new URL(request.url);
@@ -11,7 +11,7 @@ export async function onRequestGet({ request }) {
     getDoc('kisses/_ledger'),
     runQuery({
       from: [{ collectionId: 'kisses' }],
-      select: { fields: [{ fieldPath: 'type' }, { fieldPath: 'fromName' }, { fieldPath: 'time' }] },
+      select: { fields: [{ fieldPath: 'type' }, { fieldPath: 'fromName' }, { fieldPath: 'time' }, { fieldPath: 'count' }] },
       orderBy: [{ field: { fieldPath: 'time' }, direction: 'DESCENDING' }],
       limit: 40
     }),
@@ -38,9 +38,12 @@ export async function onRequestGet({ request }) {
       type: last.type,
       from: last.fromName || null,
       time: last.time,
-      text: last.fromName
-        ? (last.fromName === name ? `You sent ${WORDS[last.type] || 'something'}` : `${WORDS[last.type] ? WORDS[last.type][0].toUpperCase() + WORDS[last.type].slice(1) : 'Something'} from ${last.fromName}`)
-        : `${WORDS[last.type] || 'Something'} was sent`
+      text: (() => {
+        const w = what(last.type, Number(last.count) || 1);
+        if (!last.fromName) return `${w[0].toUpperCase() + w.slice(1)} was sent`;
+        if (last.fromName === name) return `You sent ${w}`;
+        return `${w[0].toUpperCase() + w.slice(1)} from ${last.fromName}`;
+      })()
     },
     drawing: drawing && {
       id: drawing.id,
